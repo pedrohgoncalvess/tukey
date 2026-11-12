@@ -168,6 +168,8 @@ def test_html_all_kinds_and_cli(tmp_path):
             "app.py#start",
             "--public-api",
             "app.py#C",
+            "-o",
+            "-",
         ],
         capture_output=True,
         text=True,

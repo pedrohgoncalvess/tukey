@@ -121,7 +121,16 @@ def test_cli_coverage(tmp_path):
     (tmp_path / "a.py").write_text("def f():\n    return 1\n")
     data = coverage_file(tmp_path, {"a.py": entry([1, 2], [])})
     result = subprocess.run(
-        [sys.executable, "-m", "tukey", str(tmp_path), "--coverage", str(data)],
+        [
+            sys.executable,
+            "-m",
+            "tukey",
+            str(tmp_path),
+            "--coverage",
+            str(data),
+            "-o",
+            "-",
+        ],
         capture_output=True,
         text=True,
     )
@@ -297,7 +306,16 @@ def test_invalid_lcov(tmp_path, text):
 def test_lcov_cli_success_partial_and_invalid(tmp_path):
     (tmp_path / "a.rs").write_text("fn main() {}\n")
     data = lcov_file(tmp_path, "SF:a.rs\nDA:1,1\nend_of_record\n")
-    command = [sys.executable, "-m", "tukey", str(tmp_path), "--coverage", str(data)]
+    command = [
+        sys.executable,
+        "-m",
+        "tukey",
+        str(tmp_path),
+        "--coverage",
+        str(data),
+        "-o",
+        "-",
+    ]
     result = subprocess.run(command, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)

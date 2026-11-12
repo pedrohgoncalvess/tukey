@@ -8,7 +8,7 @@ import yaml
 
 PATH_KEYS = {"path", "output", "output_dir", "coverage", "coverage_root"}
 LIST_KEYS = {"exclude", "ignore_dirs", "ignore_extensions", "entry_point", "public_api"}
-KEYS = PATH_KEYS | LIST_KEYS | {"html", "format", "quiet", "no_exclusion"}
+KEYS = PATH_KEYS | LIST_KEYS | {"html", "format", "quiet", "no_exclusion", "cache"}
 
 
 def load_config(path: Path) -> dict:
@@ -39,7 +39,7 @@ def load_config(path: Path) -> dict:
                 or isinstance(value, str)
                 and bool(value.strip())
             )
-        elif key == "quiet":
+        elif key in {"quiet", "cache"}:
             valid = isinstance(value, bool)
         elif key == "no_exclusion":
             valid = isinstance(value, (bool, str)) or (
@@ -72,6 +72,7 @@ def resolve_options(cli: Namespace) -> Namespace:
         "public_api": [],
         "quiet": False,
         "no_exclusion": False,
+        "cache": True,
         **preset,
     }
     explicit = {key: value for key, value in vars(cli).items() if value is not None}
@@ -90,13 +91,22 @@ def resolve_options(cli: Namespace) -> Namespace:
             path = Path(values[key]).expanduser()
             values[key] = base / path if key not in explicit else path
     values["path"] = values["path"] or (base if cli.config else Path("."))
+    source_path = values["path"].expanduser().resolve()
+    root = source_path.parent if source_path.is_file() else source_path
+    cache_dir = root / ".tukey"
     output_base = values["output_dir"]
+    default_html = isinstance(values["html"], bool) or values["html"] is None
+    html_disabled = values["html"] is False
     if values["html"] is True:
         values["html"] = "report.html"
     elif values["html"] is False:
         values["html"] = None
     if values["format"] is None:
-        values["format"] = "both" if values["html"] else "json"
+        values["format"] = (
+            "both"
+            if values["html"] or (values["cache"] and not html_disabled)
+            else "json"
+        )
     if values["format"] in {"html", "both"}:
         values["html"] = values["html"] or "report.html"
     elif values["html"]:
@@ -109,6 +119,14 @@ def resolve_options(cli: Namespace) -> Namespace:
         )
     if output_base is not None and values["format"] != "html":
         values["output"] = values["output"] or "report.json"
+    if values["cache"] and output_base is None:
+        if values["output"] is None and values["format"] != "html":
+            values["output"] = cache_dir / "report.json"
+        if values["html"] and default_html:
+            values["html"] = cache_dir / "report.html"
+    # A dash explicitly requests JSON on stdout, including with caching enabled.
+    if values["output"] is not None and str(values["output"]) == "-":
+        values["output"] = None
     for key in ("output", "html"):
         if values[key] is not None:
             path = Path(values[key]).expanduser()

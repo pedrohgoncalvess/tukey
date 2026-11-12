@@ -41,16 +41,16 @@ def test_defaults_prune_directories_and_filter_files(project):
 
 
 def test_bare_cli_flag_removes_all_defaults(project, capsys):
-    assert main([str(project), "--no-exclusion", "-q"]) == 0
+    assert main([str(project), "--no-exclusion", "-q", "-o", "-"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert len(paths(report)) == 9
     assert "bundle.min.js" in paths(report)
-    assert report["analysis"]["ignored_directories"] == []
+    assert report["analysis"]["ignored_directories"] == [".tukey"]
     assert report["analysis"]["excludes"] == []
 
 
 def test_pattern_cli_flag_removes_only_matching_defaults(project, capsys):
-    assert main([str(project), "--no-exclusion", "**pycache**", "-q"]) == 0
+    assert main([str(project), "--no-exclusion", "**pycache**", "-q", "-o", "-"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert paths(report) == {"main.py", "main.js", "app/__pycache__/cached.py"}
     assert "__pycache__" not in report["analysis"]["ignored_directories"]
@@ -68,6 +68,8 @@ def test_repeatable_comma_separated_selectors(project, capsys):
                 "--no-exclusion",
                 "**pycache**",
                 "-q",
+                "-o",
+                "-",
             ]
         )
         == 0
@@ -118,19 +120,21 @@ def test_explicit_filters_survive_default_overrides(project, override):
 )
 def test_yaml_selective_override(project, capsys, value, expected):
     config = preset(project, no_exclusion=value, quiet=True)
-    assert main(["--config", str(config)]) == 0
+    assert main(["--config", str(config), "-o", "-"]) == 0
     assert paths(json.loads(capsys.readouterr().out)) == expected
 
 
 def test_cli_can_replace_yaml_selectors_with_disable_all(project, capsys):
     config = preset(project, no_exclusion=["**pycache**"], quiet=True)
-    assert main(["--config", str(config), "--no-exclusion"]) == 0
+    assert main(["--config", str(config), "--no-exclusion", "-o", "-"]) == 0
     assert len(paths(json.loads(capsys.readouterr().out))) == 9
 
 
 def test_cli_selectors_replace_yaml_disable_all(project, capsys):
     config = preset(project, no_exclusion=True, quiet=True)
-    assert main(["--config", str(config), "--no-exclusion", "**pycache**"]) == 0
+    assert (
+        main(["--config", str(config), "--no-exclusion", "**pycache**", "-o", "-"]) == 0
+    )
     assert paths(json.loads(capsys.readouterr().out)) == {
         "main.py",
         "main.js",

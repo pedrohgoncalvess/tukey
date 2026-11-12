@@ -67,7 +67,7 @@ def test_config_filters_nested_directories_extensions_and_pages(tmp_path, capsys
         quiet=True,
     )
 
-    assert main(["--config", str(config)]) == 0
+    assert main(["--config", str(config), "-o", "-"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert [file["path"] for file in report["files"]] == [
         "app/keep.py",
@@ -94,6 +94,8 @@ def test_cli_replaces_preset_lists_and_can_enable_logs(tmp_path, capsys):
                 "--ignore-dirs",
                 " cache ",
                 "--no-quiet",
+                "-o",
+                "-",
             ]
         )
         == 0
@@ -184,7 +186,7 @@ def test_html_filename_override_preserves_html_only_preset(tmp_path, capsys):
 @pytest.mark.parametrize("extension", ["ts", ".ts", "*.ts", " .TS, , "])
 def test_ignore_extensions_cli_and_single_file(tmp_path, capsys, extension):
     source = write(tmp_path, "main.TS", "const value = 1;")
-    assert main([str(source), "--ignore-extensions", extension, "-q"]) == 0
+    assert main([str(source), "--ignore-extensions", extension, "-q", "-o", "-"]) == 0
     assert json.loads(capsys.readouterr().out)["summary"]["file_count"] == 0
 
 
@@ -236,7 +238,7 @@ def test_missing_config_and_default_current_directory(tmp_path, monkeypatch, cap
     write(tmp_path, "main.py")
     assert main(["--config", "missing.yaml"]) == 2
     assert capsys.readouterr().out == ""
-    assert main(["-q"]) == 0
+    assert main(["-q", "-o", "-"]) == 0
     assert json.loads(capsys.readouterr().out)["summary"]["file_count"] == 1
 
 

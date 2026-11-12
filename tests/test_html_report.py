@@ -172,13 +172,13 @@ def test_html_cli_keeps_json(tmp_path):
     assert '<svg id="graph"' in html_path.read_text(encoding="utf-8")
     assert json.loads(json_path.read_text())["call_graph"]
     result = subprocess.run(
-        [sys.executable, "-m", "tukey", str(tmp_path), "--html"],
+        [sys.executable, "-m", "tukey", str(tmp_path), "--html", "-o", "-"],
         cwd=tmp_path,
         capture_output=True,
         encoding="utf-8",
     )
     assert result.returncode == 0
-    assert (tmp_path / "report.html").exists()
+    assert (tmp_path / ".tukey/report.html").exists()
     assert json.loads(result.stdout)["schema_version"] == "1.4.0"
     command[-1] = str(html_path)
     result = subprocess.run(command, capture_output=True, encoding="utf-8")

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import __version__
+from .cache import ParseCache, digest
 from .syntax import EXTENSIONS, parse
 from .relations import call_graph
 from .usage import attach as attach_usage
@@ -191,6 +192,7 @@ def discover(
             d
             for d in dirs
             if d not in ignored_dirs
+            and d != ".tukey"
             and not matches_default(d, default_dirs)
             and not (base / d).is_symlink()
             and not excluded((base / d).relative_to(path).as_posix())
@@ -318,6 +320,7 @@ def analyze(
     ignore_dirs: list[str] | str | None = None,
     ignore_extensions: list[str] | str | None = None,
     no_exclusion: list[str] | str | bool | None = None,
+    cache: bool = True,
 ) -> dict:
     """Analyze source code; optionally emit progress messages as work proceeds."""
     if coverage_root is not None and coverage is None:
@@ -328,6 +331,13 @@ def analyze(
     if not path.is_file() and not path.is_dir():
         raise ValueError(f"Expected a file or directory: {path}")
     root = path.parent if path.is_file() else path
+    parse_cache = ParseCache(root) if cache else None
+    if (
+        parse_cache
+        and coverage is not None
+        and Path(coverage).expanduser().resolve() == parse_cache.path.resolve()
+    ):
+        raise ValueError("Coverage input must not use the cache manifest path")
     if progress:
         progress(f"Starting analysis: {path}")
     ignore_dirs = csv_items(ignore_dirs)
@@ -343,6 +353,7 @@ def analyze(
     if progress:
         progress(f"Discovery complete: {total} source files")
     files = []
+    reused = 0
     for index, file in enumerate(discovered, start=1):
         relative = file.relative_to(root).as_posix()
         if progress:
@@ -352,9 +363,18 @@ def analyze(
         try:
             source = file.read_bytes()
             source.decode("utf-8")
-            metrics = parse(
-                source, EXTENSIONS[file.suffix.lower()], file.suffix.lower()
-            )
+            source_hash = digest(source) if parse_cache else None
+            metrics = parse_cache.get(relative, source_hash) if parse_cache else None
+            if metrics is None:
+                metrics = parse(
+                    source, EXTENSIONS[file.suffix.lower()], file.suffix.lower()
+                )
+                if parse_cache:
+                    parse_cache.put(relative, source_hash, metrics)
+            else:
+                reused += 1
+                if progress:
+                    progress(f"Cache hit: {relative} (unchanged; skipping parsing)")
             for declaration in metrics["declarations"]:
                 if declaration["parent_id"]:
                     declaration["parent_id"] = relative + "#" + declaration["parent_id"]
@@ -469,6 +489,10 @@ def analyze(
         public_api,
         incomplete=bool(errors or syntax_errors),
     )
+    if parse_cache:
+        parse_cache.save()
+        if progress:
+            progress(f"Cache: {reused} reused, {len(files) - reused} parsed")
     if progress:
         progress(
             f"Analysis complete: {len(files)}/{total} files analyzed, "
@@ -484,7 +508,7 @@ def analyze(
             "size_units": ["lines", "nonblank_lines", "bytes"],
             "unused_imports": "identifier-based candidates; no scope or compiler resolution",
             "coupling": "distinct directory modules connected by resolved local imports",
-            "ignored_directories": sorted(default_dirs | set(ignore_dirs)),
+            "ignored_directories": sorted(default_dirs | set(ignore_dirs) | {".tukey"}),
             "excludes": sorted(default_files)
             + (excludes or [])
             + ["*" + ext for ext in ignore_extensions],

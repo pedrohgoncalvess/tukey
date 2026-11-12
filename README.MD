@@ -128,8 +128,14 @@ installation remain available for other tools.
 ## Quick start
 
 ```sh
-# Print a JSON report to standard output.
+# Save JSON, HTML, and a per-file cache inside the analyzed project/.tukey.
 tukey /path/to/project
+
+# Analyze without creating or using .tukey; print JSON to standard output.
+tukey /path/to/project --no-cache
+
+# Keep the cache and HTML report, but send JSON to stdout for a pipeline.
+tukey /path/to/project --output -
 
 # Write JSON and an interactive HTML map.
 tukey /path/to/project --output report.json --html report.html
@@ -143,15 +149,21 @@ tukey . --exclude "tests/*" --exclude "generated/*" --html
 ```
 
 Open the generated HTML file in a browser. It contains its own data and styles
-and needs no server, CDN, or network connection. With `--html` and no filename,
-Tukey writes `report.html` in the current directory. JSON still goes to stdout
-unless `--output` is specified. Output directories must already exist, and JSON
-and HTML must use different paths.
+and needs no server, CDN, or network connection. By default, Tukey creates
+`.tukey/report.html`, `.tukey/report.json`, and `.tukey/cache.json` inside the
+analyzed directory (or beside an analyzed single file). Explicit output paths
+and `--output-dir` override report destinations. Other output parents must exist,
+and JSON, HTML, and the cache manifest must use different paths.
 
 Progress logs are printed immediately to stderr while directories are scanned
 and files are analyzed, including file counts, percentages, and final analysis
-stages. JSON on stdout remains suitable for piping to other tools. Use `--quiet`
-(or `-q`) to suppress progress logs; CLI errors are still printed.
+stages. In an interactive terminal, file analysis and cache hits update the same
+line; other messages use separate lines. Redirected logs use ordinary lines.
+JSON on stdout remains suitable for piping to other tools. Use `--quiet`
+(or `-q`) to suppress progress logs and final result links; CLI errors are still printed.
+At completion, Tukey prints absolute paths and portable `file://` URLs for the
+reports and results folder. Interactive terminals also receive clickable OSC 8
+links; open the HTML link in a browser or the folder link in your file explorer.
 
 See the checked-in [JSON example](docs/example-report.json) and
 [HTML example](docs/example-report.html) (download and open locally).
@@ -160,8 +172,8 @@ See the checked-in [JSON example](docs/example-report.json) and
 
 | Option | Purpose |
 | --- | --- |
-| `path` | Required source file or project directory |
-| `-o`, `--output FILE` | Write UTF-8 JSON instead of printing it |
+| `path` | Source file or project directory; defaults to preset path or current directory |
+| `-o`, `--output FILE` | JSON destination; defaults to `.tukey/report.json`; `-` sends it to stdout |
 | `--html [FILE]` | Also generate an offline HTML report |
 | `--exclude GLOB` | Exclude a relative path pattern; repeatable |
 | `--coverage FILE` | Import Coverage.py JSON or LCOV; detected by content |
@@ -170,6 +182,7 @@ See the checked-in [JSON example](docs/example-report.json) and
 | `--public-api GLOB[#NAME]` | Preserve API files or declarations; repeatable |
 | `-q`, `--quiet` | Suppress progress logs on stderr |
 | `--config FILE` | Load a YAML configuration preset |
+| `--cache`, `--no-cache` | Enable/disable the project cache and implicit `.tukey` outputs |
 | `--format json\|html\|both` | Select the report formats |
 | `--output-dir DIR` | Create/use a report directory |
 | `--ignore-dirs NAMES` | Ignore directory names at every depth; comma-separated, repeatable |
@@ -194,7 +207,7 @@ tukey --config tukey.example.yaml --output-dir custom-reports --format html
 
 Presets support `path`, `format`, `output_dir`, `output` (JSON filename),
 `html` (HTML filename or boolean), `exclude`, `ignore_dirs`, `ignore_extensions`,
-`coverage`, `coverage_root`, `entry_point`, `public_api`, and `quiet`.
+`coverage`, `coverage_root`, `entry_point`, `public_api`, `quiet`, and `cache`.
 `no_exclusion` accepts `false` (keep defaults), `true` (disable all), or a string/list
 of default names or glob patterns to disable selectively.
 Unknown keys and invalid value types produce an error. A preset is loaded only
@@ -205,9 +218,12 @@ Paths in YAML are relative to the YAML file's directory. CLI paths are relative
 to the current directory. When `output_dir` is set, relative `output` and `html`
 filenames go inside it, and default to `report.json` and `report.html`.
 The output directory is created automatically; other output parents must exist.
-Without `output_dir` or `output`, JSON still goes to stdout. `format: html`
-generates only HTML; `format: both` generates both reports. Without `format`,
-Tukey generates JSON, plus HTML when `html` is enabled.
+Without `output_dir` or `output`, reports default to the analyzed project's
+`.tukey` folder. `format: html` generates only HTML; `format: both` generates
+both reports. Without `format`, Tukey generates both reports when caching is
+enabled. With `cache: false` / `--no-cache`, the default is JSON on stdout and
+HTML is generated only when requested. Use `output: "-"` for JSON on stdout
+while keeping the cache. Explicit output locations are honored with either cache setting.
 
 Explicit CLI options replace preset values, including entire lists. Repeating
 a list option collects multiple values. `--format json` disables a preset's HTML
@@ -252,6 +268,27 @@ unchanged. These options remove only built-in exclusions; explicit `exclude`,
 `ignore_dirs`, and `ignore_extensions` still apply. The supported source languages
 and the policy of not following symlinks remain the same. Reports list the
 effective default exclusions after these overrides.
+
+## Incremental analysis cache
+
+`.tukey/cache.json` stores a SHA-256 content hash and raw syntax-analysis result
+for each successfully parsed source file. On the next run, Tukey reads the source,
+compares its hash, and skips parsing when it has not changed. Logs identify cache
+hits and summarize reused versus newly parsed files. Content changes are detected
+even if file size and modification time are unchanged.
+
+Imports, call graphs, usage, module metrics, and coverage are recalculated using
+the currently selected files and options, so a changed or deleted dependency does
+not leave stale project results. Cache entries also depend on the tool version,
+parser implementation, and parser dependency versions. An incompatible or corrupt
+cache is rebuilt automatically, and writes replace the manifest atomically.
+
+Use `--no-cache` or `cache: false` in YAML to avoid reading or writing the cache
+and disable implicit `.tukey` report destinations. Existing cache data is left
+untouched. You can still explicitly choose other report destinations and formats.
+`.tukey` is always excluded from source discovery, even with `--no-exclusion`,
+because it contains Tukey's generated data. Add `.tukey/` to your project's
+`.gitignore` to keep local analysis artifacts out of commits.
 
 ## What the metrics mean
 

@@ -66,7 +66,7 @@ def test_cli_progress_keeps_stdout_valid_json(tmp_path, capsys, quiet):
     source = tmp_path / "sample.py"
     source.write_text("value = 1\n", encoding="utf-8")
 
-    assert main([str(source), *quiet]) == 0
+    assert main([str(source), "-o", "-", *quiet]) == 0
     captured = capsys.readouterr()
     assert json.loads(captured.out)["summary"]["file_count"] == 1
     if quiet:

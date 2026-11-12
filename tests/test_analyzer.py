@@ -168,7 +168,9 @@ def test_cli_and_schema(tmp_path):
     for lang, (extension, source) in SAMPLES.items():
         write(tmp_path, lang + "/sample" + extension, source)
     result = subprocess.run(
-        [sys.executable, "-m", "tukey", str(tmp_path)], capture_output=True, text=True
+        [sys.executable, "-m", "tukey", str(tmp_path), "-o", "-"],
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
@@ -244,7 +246,7 @@ def test_cli_partial_report_and_unicode(tmp_path):
     write(tmp_path, "valid.py", "def função(): pass")
     write(tmp_path, "invalid.py", "def f(: pass")
     result = subprocess.run(
-        [sys.executable, "-m", "tukey", str(tmp_path)],
+        [sys.executable, "-m", "tukey", str(tmp_path), "-o", "-"],
         capture_output=True,
         encoding="utf-8",
     )

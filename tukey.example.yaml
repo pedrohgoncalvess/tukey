@@ -4,10 +4,13 @@ path: .
 
 # json, html, or both. output is the JSON filename; html is the HTML filename.
 format: both
-output_dir: reports
-output: report.json
-html: report.html
+# Defaults: <analyzed project>/.tukey/report.json and report.html.
+# Uncomment to override output locations:
+# output_dir: custom-reports
+# output: report.json
+# html: report.html
 quiet: false
+cache: true  # --no-cache / false disables the cache and implicit .tukey outputs.
 
 # Keep default exclusions. Set true to disable all, or a list to disable only matches:
 # no_exclusion: ["**pycache**", target]

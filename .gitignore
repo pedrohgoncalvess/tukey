@@ -193,3 +193,4 @@ pyrightconfig.json
 /coverage.json
 /lcov.info
 /.uv-cache/
+.tukey/
