@@ -1,0 +1,336 @@
+"""Project discovery, dependency resolution and report aggregation."""
+
+import fnmatch
+import os
+import posixpath
+from collections import Counter
+from pathlib import Path
+
+from . import __version__
+from .syntax import EXTENSIONS, parse
+from .relations import call_graph
+from .usage import attach as attach_usage
+from .coverage import aggregate as coverage_aggregate, attach as attach_coverage
+
+IGNORED = {
+    ".git",
+    ".hg",
+    ".svn",
+    ".venv",
+    "venv",
+    "env",
+    "node_modules",
+    "vendor",
+    "target",
+    "dist",
+    "build",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".next",
+    ".idea",
+}
+
+
+def discover(path: Path, excludes: list[str]):
+    if path.is_file():
+        if path.suffix.lower() not in EXTENSIONS:
+            raise ValueError(f"Unsupported source extension: {path.suffix}")
+        return [path], []
+    files, errors = [], []
+
+    def excluded(relative):
+        return any(fnmatch.fnmatchcase(relative, pattern) for pattern in excludes)
+
+    def onerror(error):
+        errors.append(
+            {
+                "code": "discovery_error",
+                "path": str(error.filename),
+                "message": str(error),
+            }
+        )
+
+    for directory, dirs, names in os.walk(path, followlinks=False, onerror=onerror):
+        base = Path(directory)
+        dirs[:] = sorted(
+            d
+            for d in dirs
+            if d not in IGNORED
+            and not (base / d).is_symlink()
+            and not excluded((base / d).relative_to(path).as_posix())
+            and not excluded((base / d).relative_to(path).as_posix() + "/")
+        )
+        for name in sorted(names):
+            file = base / name
+            if (
+                file.suffix.lower() in EXTENSIONS
+                and not file.is_symlink()
+                and not excluded(file.relative_to(path).as_posix())
+            ):
+                files.append(file)
+    return sorted(files), errors
+
+
+def path_aliases(file):
+    path = file["path"]
+    stem = str(Path(path).with_suffix("")).replace("\\", "/")
+    aliases = {stem}
+    if stem.endswith(("/__init__", "/index", "/mod")):
+        aliases.add(stem.rsplit("/", 1)[0])
+    for prefix in ("src/", "lib/"):
+        if stem.startswith(prefix):
+            aliases |= {
+                a[len(prefix) :] for a in tuple(aliases) if a.startswith(prefix)
+            }
+    return aliases
+
+
+def resolve_import(file, item, files, aliases):
+    target, language = item["target"], file["language"]
+    keys = []
+    relative = False
+    if language in {"javascript", "typescript"}:
+        relative = target.startswith(".")
+        if relative:
+            key = posixpath.normpath(
+                posixpath.join(posixpath.dirname(file["path"]), target)
+            )
+            # TypeScript often imports .js names for .ts source files.
+            keys = [key, str(Path(key).with_suffix("")).replace("\\", "/")]
+    elif language == "python":
+        relative = target.startswith(".")
+        if relative:
+            dots = len(target) - len(target.lstrip("."))
+            base = posixpath.dirname(file["path"])
+            for _ in range(dots - 1):
+                base = posixpath.dirname(base) if base else ".."
+            keys = [
+                posixpath.normpath(
+                    posixpath.join(base, target[dots:].replace(".", "/"))
+                )
+            ]
+            if item["imported_name"]:
+                keys.insert(0, posixpath.join(keys[0], item["imported_name"]))
+        else:
+            keys = [target.replace(".", "/")]
+            if item["kind"] == "symbol" and item["imported_name"]:
+                keys.insert(0, keys[0] + "/" + item["imported_name"])
+    elif language == "rust":
+        parts = target.split("::")
+        relative = parts[0] in {"crate", "self", "super"}
+        if parts[0] == "crate":
+            base = "src" if file["path"].startswith("src/") else "."
+            parts = parts[1:]
+        else:
+            base = posixpath.dirname(file["path"])
+            if parts[0] == "self":
+                parts = parts[1:]
+            while parts and parts[0] == "super":
+                base = posixpath.dirname(base)
+                parts = parts[1:]
+        for length in range(len(parts), 0, -1):
+            keys.append(posixpath.normpath(posixpath.join(base, *parts[:length])))
+    elif language in {"java", "scala", "php"}:
+        separator = "\\" if language == "php" else "."
+        matches = []
+        for candidate in files:
+            if candidate["language"] != language:
+                continue
+            package = candidate.get("package")
+            if package:
+                names = {
+                    package + separator + d["name"]
+                    for d in candidate["declarations"]
+                    if d["parent_id"] is None
+                }
+                if target in names or (
+                    item["kind"] == "wildcard" and target == package
+                ):
+                    matches.append(candidate["path"])
+        if matches:
+            return sorted(set(matches)), "resolved"
+        keys = [target.replace(separator, "/")]
+    for key in keys:
+        matches = sorted(
+            p
+            for p in aliases.get(key, set())
+            if next(f for f in files if f["path"] == p)["language"] == language
+        )
+        if len(matches) == 1:
+            return matches, "resolved"
+        if len(matches) > 1:
+            return [], "ambiguous"
+    return [], "unresolved_local" if relative else "external_or_unresolved"
+
+
+def total_size(files):
+    return {
+        key: sum(f["size"][key] for f in files)
+        for key in ("bytes", "lines", "nonblank_lines")
+    }
+
+
+def analyze(
+    path: Path | str,
+    excludes: list[str] | None = None,
+    coverage: Path | str | None = None,
+    coverage_root: Path | str | None = None,
+    entry_points: list[str] | None = None,
+    public_api: list[str] | None = None,
+) -> dict:
+    if coverage_root is not None and coverage is None:
+        raise ValueError("--coverage-root requires --coverage")
+    path = Path(path).expanduser().resolve()
+    if not path.exists():
+        raise ValueError(f"Path does not exist: {path}")
+    if not path.is_file() and not path.is_dir():
+        raise ValueError(f"Expected a file or directory: {path}")
+    root = path.parent if path.is_file() else path
+    discovered, errors = discover(path, excludes or [])
+    files = []
+    for file in discovered:
+        relative = file.relative_to(root).as_posix()
+        try:
+            source = file.read_bytes()
+            source.decode("utf-8")
+            metrics = parse(
+                source, EXTENSIONS[file.suffix.lower()], file.suffix.lower()
+            )
+            for declaration in metrics["declarations"]:
+                if declaration["parent_id"]:
+                    declaration["parent_id"] = relative + "#" + declaration["parent_id"]
+                declaration["id"] = relative + "#" + declaration["id"]
+            for call in metrics["calls"]:
+                if call["caller_id"]:
+                    call["caller_id"] = relative + "#" + call["caller_id"]
+            meta = metrics["_usage"]
+            for ref in meta["references"]:
+                if ref["source"]:
+                    ref["source"] = relative + "#" + ref["source"]
+            meta["protected"] = {
+                relative + "#" + k: v for k, v in meta["protected"].items()
+            }
+            meta["entries"] = [
+                relative + "#" + identifier for identifier in meta["entries"]
+            ]
+            files.append(
+                {
+                    "path": relative,
+                    "language": EXTENSIONS[file.suffix.lower()],
+                    "module_id": file.relative_to(root).parent.as_posix(),
+                    **metrics,
+                }
+            )
+        except (OSError, UnicodeError) as error:
+            errors.append(
+                {"code": "read_error", "path": relative, "message": str(error)}
+            )
+    errors.extend(attach_coverage(files, root, coverage, coverage_root))
+    aliases = {}
+    for file in files:
+        for alias in path_aliases(file):
+            aliases.setdefault(alias, set()).add(file["path"])
+    by_path = {f["path"]: f for f in files}
+    edges = {}
+    for file in files:
+        for item in file["imports"]:
+            matches, resolution = resolve_import(file, item, files, aliases)
+            item["resolution"], item["resolved_files"] = resolution, matches
+            for destination in matches:
+                target_module = by_path[destination]["module_id"]
+                if target_module == file["module_id"]:
+                    continue
+                pair = file["module_id"], target_module
+                edge = edges.setdefault(
+                    pair,
+                    {
+                        "source": pair[0],
+                        "target": pair[1],
+                        "import_count": 0,
+                        "file_pairs": set(),
+                    },
+                )
+                edge["import_count"] += 1
+                edge["file_pairs"].add((file["path"], destination))
+    modules = []
+    for module_id in sorted({f["module_id"] for f in files}):
+        members = [f for f in files if f["module_id"] == module_id]
+        outgoing = sorted({b for a, b in edges if a == module_id})
+        incoming = sorted({a for a, b in edges if b == module_id})
+        unresolved = sorted(
+            {
+                i["target"]
+                for f in members
+                for i in f["imports"]
+                if i["resolution"] != "resolved"
+            }
+        )
+        ce, ca = len(outgoing), len(incoming)
+        modules.append(
+            {
+                "id": module_id,
+                "files": [f["path"] for f in members],
+                "size": total_size(members),
+                "test_coverage": coverage_aggregate(members),
+                "coupling": {
+                    "efferent": ce,
+                    "afferent": ca,
+                    "instability": ce / (ce + ca) if ce + ca else None,
+                    "dependencies": outgoing,
+                    "dependents": incoming,
+                    "unresolved_dependencies": unresolved,
+                },
+            }
+        )
+    edge_list = []
+    for _, edge in sorted(edges.items()):
+        edge["file_pairs"] = [
+            {"source": a, "target": b} for a, b in sorted(edge["file_pairs"])
+        ]
+        edge_list.append(edge)
+    syntax_errors = sum(len(f["diagnostics"]) for f in files)
+    kinds = Counter(d["kind"] for f in files for d in f["declarations"])
+    calls = call_graph(files)
+    usage_analysis, unused_counts = attach_usage(
+        files,
+        calls,
+        entry_points,
+        public_api,
+        incomplete=bool(errors or syntax_errors),
+    )
+    return {
+        "schema_version": "1.4.0",
+        "tool": {"name": "tukey", "version": __version__},
+        "root": str(root),
+        "analysis": {
+            "usage": usage_analysis,
+            "module_definition": "directory (direct files only)",
+            "size_units": ["lines", "nonblank_lines", "bytes"],
+            "unused_imports": "identifier-based candidates; no scope or compiler resolution",
+            "coupling": "distinct directory modules connected by resolved local imports",
+            "ignored_directories": sorted(IGNORED),
+            "excludes": excludes or [],
+        },
+        "summary": {
+            "unused_candidates": unused_counts,
+            "test_coverage": coverage_aggregate(files),
+            "discovered_file_count": len(discovered),
+            "file_count": len(files),
+            "module_count": len(modules),
+            "languages": dict(sorted(Counter(f["language"] for f in files).items())),
+            "size": total_size(files),
+            "declarations": {
+                k: kinds[k] for k in ("class", "implementation", "function", "method")
+            },
+            "unused_import_candidates": sum(
+                i["usage"] == "unused_candidate" for f in files for i in f["imports"]
+            ),
+            "error_count": len(errors) + syntax_errors,
+        },
+        "modules": modules,
+        "files": files,
+        "dependency_graph": {"nodes": [m["id"] for m in modules], "edges": edge_list},
+        "call_graph": calls,
+        "diagnostics": errors,
+    }

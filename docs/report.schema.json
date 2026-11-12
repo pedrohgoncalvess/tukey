@@ -1,0 +1,1187 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "root",
+    "analysis",
+    "summary",
+    "modules",
+    "files",
+    "dependency_graph",
+    "diagnostics",
+    "call_graph"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.4.0"
+    },
+    "tool": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "const": "tukey"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "root": {
+      "type": "string"
+    },
+    "analysis": {
+      "type": "object",
+      "required": [
+        "module_definition",
+        "size_units",
+        "unused_imports",
+        "coupling",
+        "ignored_directories",
+        "excludes",
+        "usage"
+      ],
+      "properties": {
+        "module_definition": {
+          "type": "string"
+        },
+        "size_units": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unused_imports": {
+          "type": "string"
+        },
+        "coupling": {
+          "type": "string"
+        },
+        "ignored_directories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "usage": {
+          "type": "object",
+          "required": [
+            "entry_points",
+            "entry_point_patterns",
+            "public_api_patterns",
+            "method",
+            "mode"
+          ],
+          "properties": {
+            "entry_points": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "entry_point_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "public_api_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "method": {
+              "type": "string"
+            },
+            "mode": {
+              "enum": [
+                "reachability",
+                "references_only"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "discovered_file_count",
+        "file_count",
+        "module_count",
+        "languages",
+        "size",
+        "declarations",
+        "unused_import_candidates",
+        "error_count",
+        "test_coverage",
+        "unused_candidates"
+      ],
+      "properties": {
+        "discovered_file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "module_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "languages": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "size": {
+          "$ref": "#/$defs/size"
+        },
+        "declarations": {
+          "type": "object",
+          "required": [
+            "class",
+            "implementation",
+            "function",
+            "method"
+          ],
+          "properties": {
+            "class": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "implementation": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "function": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "method": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "unused_import_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "test_coverage": {
+          "$ref": "#/$defs/test_coverage_aggregate"
+        },
+        "unused_candidates": {
+          "type": "object",
+          "required": [
+            "files",
+            "function",
+            "class",
+            "method",
+            "implementation"
+          ],
+          "properties": {
+            "files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "function": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "class": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "method": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "implementation": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/module"
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/file"
+      }
+    },
+    "dependency_graph": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "target",
+              "import_count",
+              "file_pairs"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "import_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "file_pairs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "target"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "call_graph": {
+      "type": "object",
+      "required": [
+        "method",
+        "edges",
+        "unresolved"
+      ],
+      "properties": {
+        "method": {
+          "type": "string"
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "target",
+              "call_count",
+              "sites"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "call_count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "file",
+                    "line",
+                    "expression"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "string"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "expression": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "file",
+              "caller_id",
+              "name",
+              "receiver",
+              "expression",
+              "start_line",
+              "end_line",
+              "reason"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              },
+              "caller_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "receiver": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "expression": {
+                "type": "string"
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "reason": {
+                "enum": [
+                  "ambiguous",
+                  "syntax_error",
+                  "external_or_dynamic"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tukey source analysis report v1.3",
+  "$defs": {
+    "size": {
+      "type": "object",
+      "required": [
+        "bytes",
+        "lines",
+        "nonblank_lines"
+      ],
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nonblank_lines": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "callable_types": {
+      "type": "object",
+      "required": [
+        "policy",
+        "parameters",
+        "return_annotation",
+        "implicit_return",
+        "eligible_slots",
+        "annotated_slots",
+        "coverage"
+      ],
+      "properties": {
+        "policy": {
+          "enum": [
+            "not_applicable",
+            "best_practice",
+            "static"
+          ]
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "annotation",
+              "implicit"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "annotation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "implicit": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "return_annotation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "implicit_return": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "eligible_slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "annotated_slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "syntax_kind",
+        "parent_id",
+        "start_line",
+        "end_line",
+        "size",
+        "types",
+        "complexity",
+        "test_coverage",
+        "usage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "class",
+            "implementation",
+            "function",
+            "method"
+          ]
+        },
+        "syntax_kind": {
+          "type": "string"
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "size": {
+          "$ref": "#/$defs/size"
+        },
+        "types": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/callable_types"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "complexity": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "cyclomatic",
+                "method"
+              ],
+              "properties": {
+                "cyclomatic": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "method": {
+                  "const": "syntax_estimate"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "test_coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/test_coverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage": {
+          "$ref": "#/$defs/usage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "import": {
+      "type": "object",
+      "required": [
+        "target",
+        "binding",
+        "kind",
+        "start_line",
+        "end_line",
+        "usage",
+        "resolution",
+        "resolved_files",
+        "imported_name"
+      ],
+      "properties": {
+        "target": {
+          "type": "string"
+        },
+        "binding": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "usage": {
+          "enum": [
+            "unknown",
+            "referenced",
+            "unused_candidate"
+          ]
+        },
+        "resolution": {
+          "enum": [
+            "resolved",
+            "ambiguous",
+            "unresolved_local",
+            "external_or_unresolved"
+          ]
+        },
+        "resolved_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "imported_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "required": [
+        "path",
+        "language",
+        "module_id",
+        "size",
+        "declarations",
+        "imports",
+        "types",
+        "package",
+        "diagnostics",
+        "calls",
+        "test_coverage",
+        "usage"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "scala",
+            "rust",
+            "python",
+            "java",
+            "typescript",
+            "javascript",
+            "php"
+          ]
+        },
+        "module_id": {
+          "type": "string"
+        },
+        "size": {
+          "$ref": "#/$defs/size"
+        },
+        "declarations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/declaration"
+          }
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/import"
+          }
+        },
+        "types": {
+          "type": "object",
+          "required": [
+            "eligible_slots",
+            "annotated_slots",
+            "coverage",
+            "variables"
+          ],
+          "properties": {
+            "eligible_slots": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "annotated_slots": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "coverage": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "variables": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "annotation",
+                  "start_line",
+                  "end_line"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "annotation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "start_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "end_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "package": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diagnostic"
+          }
+        },
+        "calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "caller_id",
+              "name",
+              "receiver",
+              "expression",
+              "start_line",
+              "end_line"
+            ],
+            "properties": {
+              "caller_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "receiver": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "expression": {
+                "type": "string"
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "test_coverage": {
+          "$ref": "#/$defs/test_coverage"
+        },
+        "usage": {
+          "$ref": "#/$defs/usage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "module": {
+      "type": "object",
+      "required": [
+        "id",
+        "files",
+        "size",
+        "coupling",
+        "test_coverage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "size": {
+          "$ref": "#/$defs/size"
+        },
+        "coupling": {
+          "type": "object",
+          "required": [
+            "efferent",
+            "afferent",
+            "instability",
+            "dependencies",
+            "dependents",
+            "unresolved_dependencies"
+          ],
+          "properties": {
+            "efferent": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "afferent": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "instability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "dependencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "dependents": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unresolved_dependencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "test_coverage": {
+          "$ref": "#/$defs/test_coverage_aggregate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "test_coverage_lines": {
+      "type": "object",
+      "required": [
+        "covered",
+        "total",
+        "coverage",
+        "missing"
+      ],
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "test_coverage": {
+      "type": "object",
+      "required": [
+        "status",
+        "source",
+        "executed",
+        "execution_count",
+        "execution_evidence",
+        "lines",
+        "branches"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "measured",
+            "not_measured"
+          ]
+        },
+        "source": {
+          "enum": [
+            "coverage.py",
+            "lcov",
+            null
+          ]
+        },
+        "executed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "execution_count": {
+          "type": "null"
+        },
+        "execution_evidence": {
+          "enum": [
+            "body_lines_inferred",
+            null
+          ]
+        },
+        "lines": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/test_coverage_lines"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "branches": {
+          "type": "null"
+        }
+      },
+      "additionalProperties": false
+    },
+    "test_coverage_aggregate": {
+      "type": "object",
+      "required": [
+        "status",
+        "measured_file_count",
+        "unmeasured_file_count",
+        "lines"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "measured",
+            "partial",
+            "not_measured"
+          ]
+        },
+        "measured_file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unmeasured_file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines": {
+          "type": "object",
+          "required": [
+            "covered",
+            "total",
+            "coverage"
+          ],
+          "properties": {
+            "covered": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "coverage": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "required": [
+        "status",
+        "reachable",
+        "reasons",
+        "evidence"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "referenced",
+            "unused_candidate",
+            "unknown"
+          ]
+        },
+        "reachable": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "file",
+              "line",
+              "kind"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "enum": [
+                  "import",
+                  "call",
+                  "identifier_reference"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
