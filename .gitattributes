@@ -1,0 +1,2 @@
+# Shell installers must keep Unix line endings when checked out on Windows.
+*.sh text eol=lf
