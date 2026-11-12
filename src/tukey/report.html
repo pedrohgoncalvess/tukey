@@ -66,6 +66,7 @@ td button { padding: var(--tukey-space-xs) 0; border: 0; border-radius: 0; backg
 <header><div class="brand">tukey / code report</div><h1>Code map</h1><p id="root"></p><div class="stats" id="stats"></div></header>
 <div class="toolbar">
 <label>View <select id="mode"><option value="modules">Modules</option><option value="mixed" selected>Modules + functions</option><option value="files">Files</option><option value="classes">Classes</option><option value="functions">Functions and methods</option><option value="all">All elements</option></select></label>
+<label>Node size <select id="node-size"><option value="lines" selected>Total lines</option><option value="complexity">Estimated complexity</option></select></label>
 <label>Module <select id="module"><option value="">All</option></select></label>
 <label>Search <input id="search" type="search" placeholder="Name or file"></label>
 <label><input type="checkbox" id="contains" checked> Containment</label>
@@ -73,10 +74,10 @@ td button { padding: var(--tukey-space-xs) 0; border: 0; border-radius: 0; backg
 <label><input type="checkbox" id="calls" checked> Calls</label>
 <button id="fit">Fit to view</button><span id="status" role="status"></span>
 </div>
-<div class="legend"><span><b>■</b> Module</span><span>▢ File (rounded corners)</span><span>□ Class (outline only)</span><span class="function">● Function</span><span class="method">◆ Method</span><span>Area ∝ total lines</span><span class="import-line">Import</span><span class="call-line">Call</span><span>Dashed → containment</span><span>Brick outline: function complexity ≥ 10</span></div>
+<div class="legend"><span><b>■</b> Module</span><span>▢ File (rounded corners)</span><span>□ Class (outline only)</span><span class="function">● Function</span><span class="method">◆ Method</span><span id="size-legend">Area ∝ total lines</span><span class="import-line">Import</span><span class="call-line">Call</span><span>Dashed → containment</span><span>Brick outline: function complexity ≥ 10</span></div>
 <main><div class="canvas"><svg id="graph" aria-label="Graph of modules, files, classes and functions"></svg><div id="empty" hidden>No nodes found for this filter.</div><div class="hint">Drag the background to pan · scroll to zoom · drag a node · click to inspect</div></div><aside id="details"><h2>Explore connections</h2><p>Select a node to see its lines, complexity and dependencies. Arrows point from the dependent or caller to the target.</p><p>Use “Modules + functions” to expand the map.</p></aside></main>
 <details class="method-notes"><summary>Reading guide and analysis limitations</summary><div class="notes" id="notes"></div></details>
-<div class="table-wrap"><h2>Visible nodes · largest first</h2><table><thead><tr><th>Name</th><th>Type</th><th>Lines</th><th>Estimated complexity</th><th>Incoming / outgoing</th></tr></thead><tbody id="ranking"></tbody></table></div>
+<div class="table-wrap"><h2 id="ranking-title">Visible nodes · most lines first</h2><table><thead><tr><th>Name</th><th>Type</th><th>Lines</th><th>Estimated complexity</th><th>Incoming / outgoing</th></tr></thead><tbody id="ranking"></tbody></table></div>
 <script type="application/json" id="report-data">__TUKEY_DATA__</script>
 <section class="table-wrap" aria-label="Usage analysis">
 <h2>File and declaration usage</h2>
@@ -117,11 +118,15 @@ function stat(value,label){const e=document.createElement('div');e.className='st
 $('root').textContent=data.root;
 stat(data.summary.module_count,'modules');stat(data.summary.file_count,'files');stat(data.nodes.filter(n=>n.kind==='class').length,'classes');stat(data.nodes.filter(n=>['function','method'].includes(n.kind)).length,'functions / methods');stat(data.summary.size.lines,'total lines');stat(data.edges.filter(e=>e.kind==='import'&&all.get(e.source)?.kind==='file').length,'file import connections');stat(data.edges.filter(e=>e.kind==='call').length,'call pairs');
 for(const n of data.nodes.filter(n=>n.kind==='module')){const option=document.createElement('option');option.value=n.module;option.textContent=n.module;$('module').append(option);}
-$('notes').textContent=`Complexity: cyclomatic estimate (1 + decisions and logical operators), excluding nested function bodies from the enclosing function. Modules show the sum of their function/method complexities. Files show all physical lines; classes include their signatures and members and have no cyclomatic complexity. Class, function, file and module sizes overlap and must not be added together. File imports include dependencies within the same module. Module lines include direct files; function lines include signatures and bodies and overlap with module lines. Calls are resolved by names and imports; dynamic dispatch, overloads and type inference may leave some calls unconnected. ${data.unresolved_calls} unresolved calls; ${data.summary.error_count} diagnostics. Each view shows up to 600 nodes, keeping the largest; filter by module or name to explore the rest. Minimum visual size equals 1 line. This HTML works offline.`;
+$('notes').textContent=`Complexity: cyclomatic estimate (1 + decisions and logical operators), excluding nested function bodies from the enclosing function. Modules and files show the sum of their function/method complexities. Files show all physical lines; classes include their signatures and members and have no cyclomatic complexity. Class, function, file and module sizes overlap and must not be added together. File imports include dependencies within the same module. Module lines include direct files; function lines include signatures and bodies and overlap with module lines. Calls are resolved by names and imports; dynamic dispatch, overloads and type inference may leave some calls unconnected. ${data.unresolved_calls} unresolved calls; ${data.summary.error_count} diagnostics. Node area is proportional to the selected size metric, normalized within the current view. Zero or unavailable values use a minimum of 1 unit; classes therefore use the minimum area in complexity mode. Each view shows up to 600 nodes, keeping the largest by the selected metric; filter by module or name to explore the rest. This HTML works offline.`;
+function nodeSize(n){const value=n[$('node-size').value];return Number.isFinite(value)?Math.max(0,value):0;}
+function sizeLabel(){return $('node-size').value==='complexity'?'estimated complexity':'total lines';}
 function update(){
  const mode=$('mode').value,module=$('module').value,q=$('search').value.toLowerCase();
  let found=data.nodes.filter(n=>(mode==='all'||(mode==='mixed'?['module','function','method'].includes(n.kind):mode==='modules'?n.kind==='module':mode==='files'?n.kind==='file':mode==='classes'?n.kind==='class':['function','method'].includes(n.kind)))&&(!module||n.module===module)&&(!q||[n.name,n.module,n.file||'',n.owner||''].join(' ').toLowerCase().includes(q)));
- found.sort((a,b)=>b.lines-a.lines||a.id.localeCompare(b.id));visible=found.slice(0,600);
+ found.sort((a,b)=>nodeSize(b)-nodeSize(a)||b.lines-a.lines||a.id.localeCompare(b.id));visible=found.slice(0,600);
+ $('size-legend').textContent=`Area ∝ ${sizeLabel()}`;
+ $('ranking-title').textContent=`Visible nodes · ${$('node-size').value==='complexity'?'highest estimated complexity':'most lines'} first`;
  const ids=new Set(visible.map(n=>n.id));links=data.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)&&$(e.kind==='contains'?'contains':e.kind==='import'?'imports':'calls').checked);
  $('status').textContent=`${visible.length} / ${found.length} nodes · ${links.length} connections`;$('empty').hidden=visible.length!==0;
  if(!ids.has(selected))selected=null;
@@ -129,10 +134,10 @@ function update(){
 }
 function layout(){
  positions=new Map();const modules=[...new Set(visible.map(n=>n.module))].sort(),cols=Math.ceil(Math.sqrt(modules.length||1));
- const maxLines=Math.max(1,...visible.map(n=>n.lines)),unit=55/Math.sqrt(maxLines);
+ const maxSize=Math.max(1,...visible.map(nodeSize)),unit=55/Math.sqrt(maxSize);
  let widths=modules.map(m=>Math.max(440,Math.sqrt(visible.filter(n=>n.module===m).length)*90));const spacing=Math.max(440,...widths);
  modules.forEach((m,index)=>{const cx=(index%cols)*spacing,cy=Math.floor(index/cols)*spacing,members=visible.filter(n=>n.module===m),fn=members.filter(n=>n.kind!=='module');
-  for(const n of members){const radius=Math.sqrt(Math.max(1,n.lines))*unit;positions.set(n.id,{x:cx,y:cy,r:radius});}
+  for(const n of members){const radius=Math.sqrt(Math.max(1,nodeSize(n)))*unit;positions.set(n.id,{x:cx,y:cy,r:radius});}
   fn.forEach((n,i)=>{const p=positions.get(n.id),angle=i*2.399963229728653,rad=100+Math.sqrt(i)*45;p.x=cx+Math.cos(angle)*rad;p.y=cy+Math.sin(angle)*rad;});
  });
 }
@@ -161,7 +166,7 @@ function draw(){
  }
 }
 function choose(id){selected=id;draw();inspect(id);}
-function resetDetails(){$('details').replaceChildren();const h=document.createElement('h2');h.textContent='Explore connections';const p=document.createElement('p');p.textContent='Select a node to see its lines, complexity, incoming and outgoing connections. Size represents total lines.';$('details').append(h,p);}
+function resetDetails(){$('details').replaceChildren();const h=document.createElement('h2');h.textContent='Explore connections';const p=document.createElement('p');p.textContent=`Select a node to see its lines, complexity, incoming and outgoing connections. Area represents ${sizeLabel()}.`;$('details').append(h,p);}
 function inspect(id){const n=all.get(id),panel=$('details');panel.replaceChildren();panel.scrollTop=0;const badge=document.createElement('div');badge.className='badge';badge.textContent=names[n.kind];const h=document.createElement('h2');h.textContent=n.name;panel.append(badge,h);
  const p=document.createElement('p');p.textContent=n.file?`${n.file}:${n.start_line}–${n.end_line}${n.owner?' · '+n.owner:''}`:`${n.file_count} files · ${n.callable_count} functions/methods`;panel.append(p);
  const dl=document.createElement('dl');const values=[['Total lines',n.lines],['Estimated complexity',n.complexity??'—']];
@@ -178,7 +183,7 @@ function inspect(id){const n=all.get(id),panel=$('details');panel.replaceChildre
 function ranking(){const body=$('ranking');body.replaceChildren();for(const n of visible){const tr=document.createElement('tr'),td=document.createElement('td'),button=document.createElement('button');button.textContent=n.name;button.onclick=()=>choose(n.id);td.append(button);tr.append(td);for(const value of [names[n.kind],n.lines,n.complexity??'—',n.kind==='module'?`${n.coupling.afferent} / ${n.coupling.efferent}`:n.kind==='class'?'—':`${n.fan_in} / ${n.fan_out}`]){const cell=document.createElement('td');cell.textContent=value;tr.append(cell);}body.append(tr);}}
 function fit(){if(!visible.length)return;const ps=[...positions.values()],minX=Math.min(...ps.map(p=>p.x-p.r-70)),maxX=Math.max(...ps.map(p=>p.x+p.r+70)),minY=Math.min(...ps.map(p=>p.y-p.r-60)),maxY=Math.max(...ps.map(p=>p.y+p.r+60)),box=$('graph').getBoundingClientRect();zoom=Math.max(.02,Math.min(2,box.width/(maxX-minX),box.height/(maxY-minY))*.86);offset={x:box.width/2-(minX+maxX)/2*zoom,y:box.height/2-(minY+maxY)/2*zoom};transform();}
 function transform(){const layer=$('layer');if(layer)layer.setAttribute('transform',`translate(${offset.x} ${offset.y}) scale(${zoom})`);}
-for(const id of ['mode','module','contains','imports','calls'])$(id).addEventListener('change',update);$('search').addEventListener('input',update);$('fit').onclick=fit;
+for(const id of ['mode','node-size','module','contains','imports','calls'])$(id).addEventListener('change',update);$('search').addEventListener('input',update);$('fit').onclick=fit;
 const svg=$('graph');svg.addEventListener('wheel',e=>{e.preventDefault();const box=svg.getBoundingClientRect(),x=e.clientX-box.left,y=e.clientY-box.top,next=Math.max(.02,Math.min(15,zoom*Math.exp(-e.deltaY*.001)));offset={x:x-(x-offset.x)*next/zoom,y:y-(y-offset.y)*next/zoom};zoom=next;transform();},{passive:false});
 svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const target=e.target.closest('.node');gesture={id:target?.dataset.id,x:e.clientX,y:e.clientY,moved:false};svg.setPointerCapture(e.pointerId);});
 svg.addEventListener('pointermove',e=>{if(!gesture)return;const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;if(Math.abs(dx)+Math.abs(dy)>2)gesture.moved=true;if(gesture.id){const p=positions.get(gesture.id);p.x+=dx/zoom;p.y+=dy/zoom;draw();}else{offset.x+=dx;offset.y+=dy;transform();}gesture.x=e.clientX;gesture.y=e.clientY;});

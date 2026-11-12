@@ -21,6 +21,7 @@ The name honors **John Tukey** and his contributions to exploratory data analysi
 - Find potentially unused files and declarations using references and entry points.
 - Import existing Coverage.py JSON or LCOV reports without running tests.
 - Navigate an offline HTML map with search, filters, zoom, and declaration details.
+- Size graph nodes by total lines or estimated complexity using the HTML toolbar.
 - Consume a documented JSON contract for integrations and custom reporting.
 
 ## Requirements
