@@ -244,7 +244,8 @@ These filters also apply when analyzing a single file.
 Tukey skips version-control metadata, virtual environments, dependency directories
 (`node_modules`, `npm_modules`, `vendor`, `bower_components`, `site-packages`),
 build outputs (`target`, including Scala/sbt targets, `build`, `dist`), caches
-(`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.uv-cache`, `.cache`),
+(`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.uv-cache`,
+`.uv-cache-*` such as `.uv-cache-codex`, `.cache`),
 tool directories (`.gradle`, `.sbt`, `.bloop`, `.metals`, `.bsp`, `.scala-build`),
 framework caches, editor metadata, and coverage reports before descending into them.
 Names apply at every depth. Built-in file exclusions cover ignore files such as

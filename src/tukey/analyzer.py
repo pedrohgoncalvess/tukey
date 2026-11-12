@@ -36,6 +36,7 @@ IGNORED = {
     ".nox",
     ".ruff_cache",
     ".uv-cache",
+    ".uv-cache-*",
     ".cache",
     ".gradle",
     ".sbt",

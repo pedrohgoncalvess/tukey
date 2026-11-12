@@ -40,6 +40,29 @@ def test_defaults_prune_directories_and_filter_files(project):
     assert ".dockerignore" in report["analysis"]["excludes"]
 
 
+@pytest.mark.parametrize("override", [None, True, ".uv-cache*"])
+def test_nested_uv_cache_variants_are_pruned_before_scanning(tmp_path, override):
+    write(tmp_path, "mirror/.uv-cache-codex/sdists-v9/cached.py")
+    write(tmp_path, "mirror/.uv-cache/cached.py")
+    write(tmp_path, "mirror/.tools/script.py")
+    messages = []
+    report = analyze(
+        tmp_path, no_exclusion=override, cache=False, progress=messages.append
+    )
+    scanned_cache = any(
+        message.startswith("Scanning directory: mirror/.uv-cache")
+        for message in messages
+    )
+    assert scanned_cache == (override is not None)
+    expected = {"mirror/.tools/script.py"}
+    if override is not None:
+        expected |= {
+            "mirror/.uv-cache/cached.py",
+            "mirror/.uv-cache-codex/sdists-v9/cached.py",
+        }
+    assert paths(report) == expected
+
+
 def test_bare_cli_flag_removes_all_defaults(project, capsys):
     assert main([str(project), "--no-exclusion", "-q", "-o", "-"]) == 0
     report = json.loads(capsys.readouterr().out)
