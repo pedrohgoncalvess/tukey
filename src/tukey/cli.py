@@ -8,6 +8,38 @@ from .analyzer import analyze
 from .html_report import render_html
 
 
+def _file_identity(path: Path) -> tuple[int, int] | None:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return None
+    return (stat.st_dev, stat.st_ino) if stat.st_ino else None
+
+
+def _validate_output_paths(outputs: list[Path], inputs: list[Path]) -> None:
+    if not outputs:
+        return
+    input_paths = {path.resolve() for path in inputs}
+    input_ids = {
+        identity
+        for path in input_paths
+        if (identity := _file_identity(path)) is not None
+    }
+    output_paths, output_ids = set(), set()
+    for output in outputs:
+        resolved = output.resolve()
+        identity = _file_identity(resolved)
+        if resolved in input_paths or (identity is not None and identity in input_ids):
+            raise ValueError(f"Report output would overwrite an input file: {output}")
+        if resolved in output_paths or (
+            identity is not None and identity in output_ids
+        ):
+            raise ValueError("HTML and JSON outputs must use different paths")
+        output_paths.add(resolved)
+        if identity is not None:
+            output_ids.add(identity)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Analyze source code into structured JSON."
@@ -63,8 +95,19 @@ def main(argv: list[str] | None = None) -> int:
             args.entry_point,
             args.public_api,
         )
-        if args.html and args.output and args.html.resolve() == args.output.resolve():
-            raise ValueError("HTML and JSON outputs must use different paths")
+        root = Path(report["root"])
+        inputs = [root / file["path"] for file in report["files"]]
+        inputs.extend(
+            root / diagnostic["path"]
+            for diagnostic in report["diagnostics"]
+            if diagnostic["code"] == "read_error"
+        )
+        if args.coverage:
+            inputs.append(args.coverage)
+        _validate_output_paths(
+            [output for output in (args.html, args.output) if output is not None],
+            inputs,
+        )
         if args.html:
             args.html.write_text(render_html(report), encoding="utf-8")
         payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
