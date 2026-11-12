@@ -1,0 +1,36 @@
+# Run: tukey --config tukey.example.yaml
+# Relative paths use this YAML file's directory. CLI options override this preset.
+path: .
+
+# json, html, or both. output is the JSON filename; html is the HTML filename.
+format: both
+output_dir: reports
+output: report.json
+html: report.html
+quiet: false
+
+# Keep default exclusions. Set true to disable all, or a list to disable only matches:
+# no_exclusion: ["**pycache**", target]
+no_exclusion: false
+
+# Directory names at any depth. Also accepts: "database, log".
+ignore_dirs:
+  - database
+  - log
+  - generated
+
+# Accepts .ext, ext, or *.ext; compound extensions like .d.ts also work.
+ignore_extensions:
+  - .d.ts
+
+# Relative path globs for individual pages/files or entire subtrees.
+exclude:
+  - "src/pages/legacy/*"
+  - "**/*.generated.ts"
+  - "tests/fixtures/*"
+
+# Optional coverage and usage configuration:
+# coverage: coverage.json
+# coverage_root: .
+entry_point: []
+public_api: []

@@ -30,20 +30,147 @@ IGNORED = {
     ".mypy_cache",
     ".next",
     ".idea",
+    ".bzr",
+    ".tox",
+    ".nox",
+    ".ruff_cache",
+    ".uv-cache",
+    ".cache",
+    ".gradle",
+    ".sbt",
+    ".bloop",
+    ".metals",
+    ".bsp",
+    ".scala-build",
+    ".turbo",
+    ".parcel-cache",
+    ".nuxt",
+    ".svelte-kit",
+    ".angular",
+    ".yarn",
+    ".pnpm-store",
+    ".npm",
+    "npm_modules",
+    "bower_components",
+    "jspm_packages",
+    "coverage",
+    "htmlcov",
+    "site-packages",
+    ".eggs",
+    "*.egg-info",
+    ".vscode",
+}
+
+IGNORED_FILES = {
+    ".dockerignore",
+    ".gitignore",
+    ".gitattributes",
+    ".gitmodules",
+    ".hgignore",
+    ".npmignore",
+    ".eslintignore",
+    ".prettierignore",
+    ".ignore",
+    ".env",
+    ".env.*",
+    ".DS_Store",
+    "Thumbs.db",
+    "desktop.ini",
+    "Dockerfile",
+    "Dockerfile.*",
+    "docker-compose.*",
+    "compose.yaml",
+    "compose.yml",
+    "*.lock",
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    "pnpm-lock.yaml",
+    "*.pyc",
+    "*.pyo",
+    "*.class",
+    "*.jar",
+    "*.war",
+    "*.ear",
+    "*.o",
+    "*.obj",
+    "*.so",
+    "*.dll",
+    "*.exe",
+    "*.a",
+    "*.lib",
+    "*.min.js",
+    "*.min.mjs",
+    "*.min.cjs",
+    "*.map",
 }
 
 
+def csv_items(values: list[str] | str | None) -> list[str]:
+    """Split comma-separated values, trimming whitespace and discarding empty items."""
+    if isinstance(values, str):
+        values = [values]
+    return list(
+        dict.fromkeys(
+            item.strip()
+            for value in values or []
+            for item in value.split(",")
+            if item.strip()
+        )
+    )
+
+
+def default_exclusions(
+    no_exclusion: list[str] | str | bool | None = None,
+) -> tuple[set[str], set[str]]:
+    """Remove all built-ins, or only built-in names matching the supplied globs."""
+    if (
+        no_exclusion is True
+        or no_exclusion == ""
+        or (isinstance(no_exclusion, list) and "" in no_exclusion)
+    ):
+        return set(), set()
+    selectors = csv_items(no_exclusion) if no_exclusion else []
+
+    def retained(defaults):
+        return {
+            name
+            for name in defaults
+            if not any(fnmatch.fnmatchcase(name, selector) for selector in selectors)
+        }
+
+    return retained(IGNORED), retained(IGNORED_FILES)
+
+
 def discover(
-    path: Path, excludes: list[str], progress: Callable[[str], None] | None = None
+    path: Path,
+    excludes: list[str],
+    progress: Callable[[str], None] | None = None,
+    ignore_dirs: list[str] | None = None,
+    ignore_extensions: list[str] | None = None,
+    no_exclusion: list[str] | str | bool | None = None,
 ):
-    if path.is_file():
-        if path.suffix.lower() not in EXTENSIONS:
-            raise ValueError(f"Unsupported source extension: {path.suffix}")
-        return [path], []
-    files, errors = [], []
+    default_dirs, default_files = default_exclusions(no_exclusion)
+    ignored_dirs = set(ignore_dirs or [])
+
+    def matches_default(name, patterns):
+        return any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
 
     def excluded(relative):
         return any(fnmatch.fnmatchcase(relative, pattern) for pattern in excludes)
+
+    def supported(file):
+        return file.suffix.lower() in EXTENSIONS and not any(
+            file.name.lower().endswith(extension)
+            for extension in ignore_extensions or []
+        )
+
+    if path.is_file():
+        if matches_default(path.name, default_files) or excluded(path.name):
+            return [], []
+        if path.suffix.lower() not in EXTENSIONS:
+            raise ValueError(f"Unsupported source extension: {path.suffix}")
+        return ([path] if supported(path) and not excluded(path.name) else []), []
+    files, errors = [], []
 
     def onerror(error):
         if progress:
@@ -63,7 +190,8 @@ def discover(
         dirs[:] = sorted(
             d
             for d in dirs
-            if d not in IGNORED
+            if d not in ignored_dirs
+            and not matches_default(d, default_dirs)
             and not (base / d).is_symlink()
             and not excluded((base / d).relative_to(path).as_posix())
             and not excluded((base / d).relative_to(path).as_posix() + "/")
@@ -71,7 +199,8 @@ def discover(
         for name in sorted(names):
             file = base / name
             if (
-                file.suffix.lower() in EXTENSIONS
+                supported(file)
+                and not matches_default(name, default_files)
                 and not file.is_symlink()
                 and not excluded(file.relative_to(path).as_posix())
             ):
@@ -186,6 +315,9 @@ def analyze(
     entry_points: list[str] | None = None,
     public_api: list[str] | None = None,
     progress: Callable[[str], None] | None = None,
+    ignore_dirs: list[str] | str | None = None,
+    ignore_extensions: list[str] | str | None = None,
+    no_exclusion: list[str] | str | bool | None = None,
 ) -> dict:
     """Analyze source code; optionally emit progress messages as work proceeds."""
     if coverage_root is not None and coverage is None:
@@ -198,7 +330,15 @@ def analyze(
     root = path.parent if path.is_file() else path
     if progress:
         progress(f"Starting analysis: {path}")
-    discovered, errors = discover(path, excludes or [], progress)
+    ignore_dirs = csv_items(ignore_dirs)
+    ignore_extensions = [
+        "." + extension.lower().removeprefix("*").lstrip(".")
+        for extension in csv_items(ignore_extensions)
+    ]
+    discovered, errors = discover(
+        path, excludes or [], progress, ignore_dirs, ignore_extensions, no_exclusion
+    )
+    default_dirs, default_files = default_exclusions(no_exclusion)
     total = len(discovered)
     if progress:
         progress(f"Discovery complete: {total} source files")
@@ -344,8 +484,10 @@ def analyze(
             "size_units": ["lines", "nonblank_lines", "bytes"],
             "unused_imports": "identifier-based candidates; no scope or compiler resolution",
             "coupling": "distinct directory modules connected by resolved local imports",
-            "ignored_directories": sorted(IGNORED),
-            "excludes": excludes or [],
+            "ignored_directories": sorted(default_dirs | set(ignore_dirs)),
+            "excludes": sorted(default_files)
+            + (excludes or [])
+            + ["*" + ext for ext in ignore_extensions],
         },
         "summary": {
             "unused_candidates": unused_counts,

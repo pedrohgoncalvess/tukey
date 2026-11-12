@@ -169,12 +169,89 @@ See the checked-in [JSON example](docs/example-report.json) and
 | `--entry-point GLOB[#NAME]` | Set explicit usage entry points; repeatable |
 | `--public-api GLOB[#NAME]` | Preserve API files or declarations; repeatable |
 | `-q`, `--quiet` | Suppress progress logs on stderr |
+| `--config FILE` | Load a YAML configuration preset |
+| `--format json\|html\|both` | Select the report formats |
+| `--output-dir DIR` | Create/use a report directory |
+| `--ignore-dirs NAMES` | Ignore directory names at every depth; comma-separated, repeatable |
+| `--ignore-extensions TYPES` | Ignore extensions, e.g. `.js,.ts`; comma-separated, repeatable |
+| `--no-exclusion [PATTERN]` | Disable all built-in exclusions, or only matching default names |
 | `--version` | Print the tool version |
 | `--help` | Show command help |
 
 Exit codes are `0` for success, `1` for a partial report with analysis diagnostics,
 and `2` for invalid arguments, invalid coverage input, or output errors. An error
 in one source file does not prevent analysis of the remaining files.
+
+## YAML configuration presets
+
+Copy [tukey.example.yaml](tukey.example.yaml) and run:
+
+```sh
+tukey --config tukey.example.yaml
+tukey . --ignore-dirs "database, log, generated" --ignore-extensions ".js, .d.ts"
+tukey --config tukey.example.yaml --output-dir custom-reports --format html
+```
+
+Presets support `path`, `format`, `output_dir`, `output` (JSON filename),
+`html` (HTML filename or boolean), `exclude`, `ignore_dirs`, `ignore_extensions`,
+`coverage`, `coverage_root`, `entry_point`, `public_api`, and `quiet`.
+`no_exclusion` accepts `false` (keep defaults), `true` (disable all), or a string/list
+of default names or glob patterns to disable selectively.
+Unknown keys and invalid value types produce an error. A preset is loaded only
+when `--config` is provided; without a source path, the default is the preset's
+directory (or the current directory without a preset).
+
+Paths in YAML are relative to the YAML file's directory. CLI paths are relative
+to the current directory. When `output_dir` is set, relative `output` and `html`
+filenames go inside it, and default to `report.json` and `report.html`.
+The output directory is created automatically; other output parents must exist.
+Without `output_dir` or `output`, JSON still goes to stdout. `format: html`
+generates only HTML; `format: both` generates both reports. Without `format`,
+Tukey generates JSON, plus HTML when `html` is enabled.
+
+Explicit CLI options replace preset values, including entire lists. Repeating
+a list option collects multiple values. `--format json` disables a preset's HTML
+output; `--format html` disables its JSON output. Use `--no-quiet` to enable logs
+when a preset sets `quiet: true`.
+
+`ignore_dirs` matches directory names at any depth and prunes them before scanning.
+Comma-separated names are trimmed, so `"database, log"` ignores both `database`
+and `log`; empty entries are discarded. Existing built-in exclusions still apply.
+`ignore_extensions` accepts a YAML list or comma-separated string, with `.ts`,
+`ts`, and `*.ts` treated alike, case-insensitively; `.d.ts` ignores declaration
+files without excluding other TypeScript files. To ignore specific pages/files,
+use relative path globs in `exclude`, e.g. `src/pages/legacy/*` or `**/*.generated.ts`.
+These filters also apply when analyzing a single file.
+
+### Default exclusions
+
+Tukey skips version-control metadata, virtual environments, dependency directories
+(`node_modules`, `npm_modules`, `vendor`, `bower_components`, `site-packages`),
+build outputs (`target`, including Scala/sbt targets, `build`, `dist`), caches
+(`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.uv-cache`, `.cache`),
+tool directories (`.gradle`, `.sbt`, `.bloop`, `.metals`, `.bsp`, `.scala-build`),
+framework caches, editor metadata, and coverage reports before descending into them.
+Names apply at every depth. Built-in file exclusions cover ignore files such as
+`.gitignore` and `.dockerignore`, lockfiles, compiled artifacts, source maps,
+minified JavaScript, Docker metadata, environment files, and OS metadata.
+
+```sh
+# Disable every built-in exclusion.
+tukey . --no-exclusion
+
+# Re-include only __pycache__, keeping every other default exclusion.
+tukey . --no-exclusion "**pycache**"
+
+# Re-include several defaults by name or pattern.
+tukey . --no-exclusion "target, node_modules" --no-exclusion "**pycache**"
+```
+
+Put the source path before `--no-exclusion`: an immediately following value is
+treated as its optional pattern. Quote glob patterns so the shell passes them
+unchanged. These options remove only built-in exclusions; explicit `exclude`,
+`ignore_dirs`, and `ignore_extensions` still apply. The supported source languages
+and the policy of not following symlinks remain the same. Reports list the
+effective default exclusions after these overrides.
 
 ## What the metrics mean
 

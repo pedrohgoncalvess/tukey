@@ -5,6 +5,7 @@ from pathlib import Path
 
 from . import __version__
 from .analyzer import analyze
+from .config import resolve_options
 from .html_report import render_html
 
 
@@ -48,7 +49,39 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Analyze source code into structured JSON."
     )
-    parser.add_argument("path", type=Path, help="Source file or project directory")
+    parser.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        help="Source file or project directory (default: preset path or .)",
+    )
+    parser.add_argument("--config", type=Path, help="Load a YAML configuration preset")
+    parser.add_argument(
+        "--format",
+        choices=("json", "html", "both"),
+        help="Report formats (default: JSON, or both with --html)",
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, help="Report directory; created if missing"
+    )
+    parser.add_argument(
+        "--ignore-dirs",
+        action="append",
+        help="Ignore directory names at any depth, separated by commas (repeatable)",
+    )
+    parser.add_argument(
+        "--ignore-extensions",
+        action="append",
+        help="Ignore extensions separated by commas, e.g. .js,.ts (repeatable)",
+    )
+    parser.add_argument(
+        "--no-exclusion",
+        nargs="?",
+        const="",
+        action="append",
+        metavar="PATTERN",
+        help="Disable all default exclusions without a value, or only matching default names (repeatable; comma-separated)",
+    )
     parser.add_argument("-o", "--output", type=Path, help="Write JSON to this file")
     parser.add_argument(
         "--coverage",
@@ -71,29 +104,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--exclude",
         action="append",
-        default=[],
+        default=None,
         help="Exclude a relative path glob (repeatable)",
     )
     parser.add_argument("--version", action="version", version=f"tukey {__version__}")
     parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress progress logs on stderr"
+        "-q",
+        "--quiet",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Suppress progress logs on stderr",
     )
     parser.add_argument(
         "--entry-point",
         action="append",
-        default=[],
+        default=None,
         metavar="GLOB[#NAME]",
         help="Usage entry point: relative file glob or file#symbol (repeatable; replaces auto detection)",
     )
     parser.add_argument(
         "--public-api",
         action="append",
-        default=[],
+        default=None,
         metavar="GLOB[#NAME]",
         help="Preserve externally used API files or symbols (repeatable)",
     )
     args = parser.parse_args(argv)
     try:
+        config_path = args.config.expanduser() if args.config else None
+        args = resolve_options(args)
         report = analyze(
             args.path,
             args.exclude,
@@ -102,6 +141,9 @@ def main(argv: list[str] | None = None) -> int:
             args.entry_point,
             args.public_api,
             progress=None if args.quiet else _log_progress,
+            ignore_dirs=args.ignore_dirs,
+            ignore_extensions=args.ignore_extensions,
+            no_exclusion=args.no_exclusion,
         )
         root = Path(report["root"])
         inputs = [root / file["path"] for file in report["files"]]
@@ -112,23 +154,28 @@ def main(argv: list[str] | None = None) -> int:
         )
         if args.coverage:
             inputs.append(args.coverage)
+        if config_path:
+            inputs.append(config_path)
         _validate_output_paths(
             [output for output in (args.html, args.output) if output is not None],
             inputs,
         )
+        if args.output_dir:
+            args.output_dir.mkdir(parents=True, exist_ok=True)
         if args.html:
             if not args.quiet:
                 _log_progress(f"Writing HTML report: {args.html}")
             args.html.write_text(render_html(report), encoding="utf-8")
-        payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
-        if args.output:
-            if not args.quiet:
-                _log_progress(f"Writing JSON report: {args.output}")
-            args.output.write_text(payload, encoding="utf-8")
-        else:
-            if hasattr(sys.stdout, "reconfigure"):
-                sys.stdout.reconfigure(encoding="utf-8")
-            sys.stdout.write(payload)
+        if args.format != "html":
+            payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            if args.output:
+                if not args.quiet:
+                    _log_progress(f"Writing JSON report: {args.output}")
+                args.output.write_text(payload, encoding="utf-8")
+            else:
+                if hasattr(sys.stdout, "reconfigure"):
+                    sys.stdout.reconfigure(encoding="utf-8")
+                sys.stdout.write(payload)
         return 1 if report["summary"]["error_count"] else 0
     except (OSError, ValueError) as error:
         print(f"tukey: {error}", file=sys.stderr)
