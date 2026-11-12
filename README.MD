@@ -148,6 +148,11 @@ Tukey writes `report.html` in the current directory. JSON still goes to stdout
 unless `--output` is specified. Output directories must already exist, and JSON
 and HTML must use different paths.
 
+Progress logs are printed immediately to stderr while directories are scanned
+and files are analyzed, including file counts, percentages, and final analysis
+stages. JSON on stdout remains suitable for piping to other tools. Use `--quiet`
+(or `-q`) to suppress progress logs; CLI errors are still printed.
+
 See the checked-in [JSON example](docs/example-report.json) and
 [HTML example](docs/example-report.html) (download and open locally).
 
@@ -163,6 +168,7 @@ See the checked-in [JSON example](docs/example-report.json) and
 | `--coverage-root DIR` | Base for coverage paths; defaults to the analyzed root |
 | `--entry-point GLOB[#NAME]` | Set explicit usage entry points; repeatable |
 | `--public-api GLOB[#NAME]` | Preserve API files or declarations; repeatable |
+| `-q`, `--quiet` | Suppress progress logs on stderr |
 | `--version` | Print the tool version |
 | `--help` | Show command help |
 

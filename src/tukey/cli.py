@@ -8,6 +8,10 @@ from .analyzer import analyze
 from .html_report import render_html
 
 
+def _log_progress(message: str) -> None:
+    print(f"tukey: {message}", file=sys.stderr, flush=True)
+
+
 def _file_identity(path: Path) -> tuple[int, int] | None:
     try:
         stat = path.stat()
@@ -72,6 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", action="version", version=f"tukey {__version__}")
     parser.add_argument(
+        "-q", "--quiet", action="store_true", help="Suppress progress logs on stderr"
+    )
+    parser.add_argument(
         "--entry-point",
         action="append",
         default=[],
@@ -94,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
             args.coverage_root,
             args.entry_point,
             args.public_api,
+            progress=None if args.quiet else _log_progress,
         )
         root = Path(report["root"])
         inputs = [root / file["path"] for file in report["files"]]
@@ -109,9 +117,13 @@ def main(argv: list[str] | None = None) -> int:
             inputs,
         )
         if args.html:
+            if not args.quiet:
+                _log_progress(f"Writing HTML report: {args.html}")
             args.html.write_text(render_html(report), encoding="utf-8")
         payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
         if args.output:
+            if not args.quiet:
+                _log_progress(f"Writing JSON report: {args.output}")
             args.output.write_text(payload, encoding="utf-8")
         else:
             if hasattr(sys.stdout, "reconfigure"):

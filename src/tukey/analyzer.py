@@ -4,6 +4,7 @@ import fnmatch
 import os
 import posixpath
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 
 from . import __version__
@@ -32,7 +33,9 @@ IGNORED = {
 }
 
 
-def discover(path: Path, excludes: list[str]):
+def discover(
+    path: Path, excludes: list[str], progress: Callable[[str], None] | None = None
+):
     if path.is_file():
         if path.suffix.lower() not in EXTENSIONS:
             raise ValueError(f"Unsupported source extension: {path.suffix}")
@@ -43,6 +46,8 @@ def discover(path: Path, excludes: list[str]):
         return any(fnmatch.fnmatchcase(relative, pattern) for pattern in excludes)
 
     def onerror(error):
+        if progress:
+            progress(f"Cannot scan directory {error.filename}: {error}")
         errors.append(
             {
                 "code": "discovery_error",
@@ -53,6 +58,8 @@ def discover(path: Path, excludes: list[str]):
 
     for directory, dirs, names in os.walk(path, followlinks=False, onerror=onerror):
         base = Path(directory)
+        if progress:
+            progress(f"Scanning directory: {base.relative_to(path).as_posix()}")
         dirs[:] = sorted(
             d
             for d in dirs
@@ -178,7 +185,9 @@ def analyze(
     coverage_root: Path | str | None = None,
     entry_points: list[str] | None = None,
     public_api: list[str] | None = None,
+    progress: Callable[[str], None] | None = None,
 ) -> dict:
+    """Analyze source code; optionally emit progress messages as work proceeds."""
     if coverage_root is not None and coverage is None:
         raise ValueError("--coverage-root requires --coverage")
     path = Path(path).expanduser().resolve()
@@ -187,10 +196,19 @@ def analyze(
     if not path.is_file() and not path.is_dir():
         raise ValueError(f"Expected a file or directory: {path}")
     root = path.parent if path.is_file() else path
-    discovered, errors = discover(path, excludes or [])
+    if progress:
+        progress(f"Starting analysis: {path}")
+    discovered, errors = discover(path, excludes or [], progress)
+    total = len(discovered)
+    if progress:
+        progress(f"Discovery complete: {total} source files")
     files = []
-    for file in discovered:
+    for index, file in enumerate(discovered, start=1):
         relative = file.relative_to(root).as_posix()
+        if progress:
+            progress(
+                f"Analyzing file [{index}/{total}] ({index / total:.0%}): {relative}"
+            )
         try:
             source = file.read_bytes()
             source.decode("utf-8")
@@ -223,10 +241,16 @@ def analyze(
                 }
             )
         except (OSError, UnicodeError) as error:
+            if progress:
+                progress(f"Cannot read file {relative}: {error}")
             errors.append(
                 {"code": "read_error", "path": relative, "message": str(error)}
             )
+    if progress and coverage is not None:
+        progress(f"Importing coverage: {coverage}")
     errors.extend(attach_coverage(files, root, coverage, coverage_root))
+    if progress:
+        progress("Resolving imports and module dependencies")
     aliases = {}
     for file in files:
         for alias in path_aliases(file):
@@ -254,6 +278,8 @@ def analyze(
                 edge["import_count"] += 1
                 edge["file_pairs"].add((file["path"], destination))
     modules = []
+    if progress:
+        progress("Aggregating module metrics")
     for module_id in sorted({f["module_id"] for f in files}):
         members = [f for f in files if f["module_id"] == module_id]
         outgoing = sorted({b for a, b in edges if a == module_id})
@@ -291,7 +317,11 @@ def analyze(
         edge_list.append(edge)
     syntax_errors = sum(len(f["diagnostics"]) for f in files)
     kinds = Counter(d["kind"] for f in files for d in f["declarations"])
+    if progress:
+        progress("Building call graph")
     calls = call_graph(files)
+    if progress:
+        progress("Analyzing symbol usage")
     usage_analysis, unused_counts = attach_usage(
         files,
         calls,
@@ -299,6 +329,11 @@ def analyze(
         public_api,
         incomplete=bool(errors or syntax_errors),
     )
+    if progress:
+        progress(
+            f"Analysis complete: {len(files)}/{total} files analyzed, "
+            f"{len(modules)} modules, {len(errors) + syntax_errors} diagnostics"
+        )
     return {
         "schema_version": "1.4.0",
         "tool": {"name": "tukey", "version": __version__},
