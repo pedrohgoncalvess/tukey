@@ -25,8 +25,10 @@ The name honors **John Tukey** and his contributions to exploratory data analysi
 
 ## Requirements
 
-- Python **3.12 or newer**.
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) for the commands below.
+- An internet connection for installation. The installers set up
+  [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python **3.12**
+  automatically when needed.
+- Linux/macOS: a POSIX shell and `curl` or `wget`. Windows: PowerShell **5.1+**.
 - GNU Make is optional; direct commands are provided throughout.
 
 No compiler or runtime for the analyzed languages is required. The parser pack
@@ -35,7 +37,67 @@ dependencies have been installed.
 
 ## Installation
 
-Clone the repository and install the CLI in an isolated tool environment:
+Install for your user account without administrator privileges or `sudo`.
+The installers download the source from the repository's `main` branch, install
+the CLI in an isolated environment, and configure your user's PATH. You do not
+need Git, Make, or a preinstalled Python. The distribution is named `tukey-code`;
+the command and Python package are `tukey`.
+
+### Linux and macOS
+
+Copy and run this command in your terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/pedrohgoncalvess/tukey/main/install.sh -o install-tukey.sh && sh install-tukey.sh
+```
+
+Or use `wget`:
+
+```sh
+wget -q https://raw.githubusercontent.com/pedrohgoncalvess/tukey/main/install.sh -O install-tukey.sh && sh install-tukey.sh
+```
+
+Open a new terminal after installation, then run `tukey --help`. If your shell
+configuration cannot be updated, the installer prints the directory to add to
+your PATH. You can inspect the downloaded `install-tukey.sh` before running it.
+
+### Windows
+
+Paste the following into **PowerShell**:
+
+```powershell
+$installer = Join-Path $env:TEMP ("tukey-install-{0}.ps1" -f [guid]::NewGuid())
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/pedrohgoncalvess/tukey/main/install.ps1 -OutFile $installer -UseBasicParsing -ErrorAction Stop
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
+```
+
+The execution-policy override applies only to that installer process. You can
+inspect the downloaded script before running the last line. Open a new terminal
+after installation, then run `tukey --help`. Restart your terminal application
+if it still has the old PATH.
+
+### Install from a local checkout
+
+If you have already cloned or downloaded this project, run from its root:
+
+```sh
+# Linux/macOS: install this checkout, including local changes.
+sh install.sh .
+```
+
+```powershell
+# Windows: install this checkout, including local changes.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Source .
+```
+
+Both scripts accept a local source directory or source archive URL. For example,
+you can replace `.` with an archive URL for a specific Git tag or commit.
+Running an installer again reinstalls Tukey from the selected source. Without
+an argument, it always downloads `main`, even when run from a local checkout.
+
+### Manual installation with uv
+
+If uv is already installed, clone the repository and run:
 
 ```sh
 git clone https://github.com/pedrohgoncalvess/tukey.git
@@ -46,7 +108,6 @@ uv tool update-shell
 
 Open a new terminal to make `tukey` available on your PATH. Run the installation
 command again after updating the checkout. Alternatively, use `make install`.
-The distribution is named `tukey-code`; the command and Python package are `tukey`.
 
 To run directly from the checkout:
 
@@ -54,6 +115,15 @@ To run directly from the checkout:
 uv sync --group dev
 uv run tukey --help
 ```
+
+### Uninstall
+
+```sh
+uv tool uninstall tukey-code
+```
+
+This removes Tukey's isolated environment and command. uv and any managed Python
+installation remain available for other tools.
 
 ## Quick start
 
@@ -237,6 +307,7 @@ make tokens
 
 | Location | Responsibility |
 | --- | --- |
+| `install.sh`, `install.ps1` | User-level installation and PATH configuration |
 | `src/tukey/cli.py` | CLI arguments and report output |
 | `src/tukey/syntax.py` | Tree-sitter language adapters and syntax metrics |
 | `src/tukey/analyzer.py` | Discovery, import resolution, and aggregation |
