@@ -158,8 +158,9 @@ and JSON, HTML, and the cache manifest must use different paths.
 
 Progress logs are printed immediately to stderr while directories are scanned
 and files are analyzed, including file counts, percentages, and final analysis
-stages. In an interactive terminal, file analysis and cache hits update the same
-line; other messages use separate lines. Redirected logs use ordinary lines.
+stages. In an interactive terminal, directory scanning, file analysis, and cache
+hits update the same line; other messages use separate lines. Redirected logs
+use ordinary lines.
 JSON on stdout remains suitable for piping to other tools. Use `--quiet`
 (or `-q`) to suppress progress logs and final result links; CLI errors are still printed.
 At completion, Tukey prints absolute paths and portable `file://` URLs for the

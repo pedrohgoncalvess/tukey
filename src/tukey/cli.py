@@ -21,7 +21,7 @@ class _ProgressPrinter:
 
     def __call__(self, message: str) -> None:
         if self.stream.isatty() and message.startswith(
-            ("Analyzing file ", "Cache hit:")
+            ("Scanning directory:", "Analyzing file ", "Cache hit:")
         ):
             line = f"tukey: {message}"
             columns = max(1, shutil.get_terminal_size().columns - 1)
