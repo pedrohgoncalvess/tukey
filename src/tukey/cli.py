@@ -5,6 +5,7 @@ from pathlib import Path
 
 from . import __version__
 from .analyzer import analyze
+from .html_report import render_html
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -22,6 +23,14 @@ def main(argv: list[str] | None = None) -> int:
         "--coverage-root",
         type=Path,
         help="Base directory for coverage paths (default: analyzed root)",
+    )
+    parser.add_argument(
+        "--html",
+        type=Path,
+        nargs="?",
+        const=Path("report.html"),
+        metavar="FILE",
+        help="Also generate an interactive offline HTML graph (default: report.html)",
     )
     parser.add_argument(
         "--exclude",
@@ -54,6 +63,10 @@ def main(argv: list[str] | None = None) -> int:
             args.entry_point,
             args.public_api,
         )
+        if args.html and args.output and args.html.resolve() == args.output.resolve():
+            raise ValueError("HTML and JSON outputs must use different paths")
+        if args.html:
+            args.html.write_text(render_html(report), encoding="utf-8")
         payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
         if args.output:
             args.output.write_text(payload, encoding="utf-8")

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tukey · Code map</title>
+<style>
+__TUKEY_TOKENS__
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tukey-color-background); color: var(--tukey-color-ink); font: var(--tukey-size-body)/var(--tukey-number-line-height) var(--tukey-font-body); }
+header { padding: var(--tukey-space-xl) var(--tukey-space-page); border-bottom: 2px solid var(--tukey-color-rule-strong); }
+h1, h2 { font-family: var(--tukey-font-heading); }
+h1 { margin: var(--tukey-space-xs) 0 var(--tukey-space-sm); font-size: var(--tukey-size-title); font-weight: 600; }
+h2 { font-size: var(--tukey-size-section); }
+header p { margin: 0; color: var(--tukey-color-muted); font-family: var(--tukey-font-mono); font-size: var(--tukey-size-small); overflow-wrap: anywhere; }
+.brand { color: var(--tukey-color-accent); font-family: var(--tukey-font-mono); font-size: var(--tukey-size-small); }
+.stats { display: flex; gap: var(--tukey-space-page); flex-wrap: wrap; margin-top: var(--tukey-space-xl); }
+.stat { padding-right: var(--tukey-space-xl); border-right: var(--tukey-border-width) solid var(--tukey-color-rule); }
+.stat:last-child { border-right: 0; }
+.stat strong { display: block; font: normal var(--tukey-size-metric) var(--tukey-font-mono); }
+.stat span { color: var(--tukey-color-muted); font-size: var(--tukey-size-caption); }
+.toolbar { padding: var(--tukey-space-lg) var(--tukey-space-page); display: flex; gap: var(--tukey-space-md); flex-wrap: wrap; align-items: center; border-bottom: var(--tukey-border-width) solid var(--tukey-color-rule); }
+label { color: var(--tukey-color-muted); font-size: var(--tukey-size-caption); display: flex; gap: var(--tukey-space-sm); align-items: center; }
+input, select, button { font: inherit; color: var(--tukey-color-ink); background: var(--tukey-color-canvas); border: var(--tukey-border-width) solid var(--tukey-color-rule-strong); border-radius: var(--tukey-border-radius); padding: var(--tukey-space-sm) var(--tukey-space-md); }
+button { cursor: pointer; }
+button:hover { background: var(--tukey-color-surface); }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--tukey-color-focus); outline-offset: 3px; }
+input[type=checkbox] { accent-color: var(--tukey-color-accent); }
+input[type=search] { width: 200px; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) var(--tukey-layout-sidebar); grid-template-rows: minmax(0, 1fr); height: max(550px, 70vh); }
+.canvas { position: relative; height: 100%; min-height: 0; min-width: 0; background: var(--tukey-color-canvas); overflow: hidden; }
+svg { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.hint { position: absolute; left: var(--tukey-space-lg); bottom: var(--tukey-space-lg); color: var(--tukey-color-muted); pointer-events: none; font-size: var(--tukey-size-caption); }
+.legend { padding: var(--tukey-space-md) var(--tukey-space-page); display: flex; flex-wrap: wrap; gap: var(--tukey-space-lg); color: var(--tukey-color-muted); font-size: var(--tukey-size-caption); border-bottom: var(--tukey-border-width) solid var(--tukey-color-rule); }
+.legend b { color: var(--tukey-color-module); }
+.legend .function { color: var(--tukey-color-function); }
+.legend .method { color: var(--tukey-color-method); }
+.import-line::before, .call-line::before { content: ''; display: inline-block; width: 20px; margin-right: var(--tukey-space-xs); vertical-align: middle; border-top: 2px solid var(--tukey-color-import); }
+.call-line::before { border-top: 2px dotted var(--tukey-color-call); }
+aside { min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; border-left: var(--tukey-border-width) solid var(--tukey-color-rule); padding: var(--tukey-space-xl); background: var(--tukey-color-surface); overflow-wrap: anywhere; }
+aside h2 { margin: 0 0 var(--tukey-space-sm); }
+aside p { color: var(--tukey-color-muted); }
+dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tukey-space-sm); font-size: var(--tukey-size-small); }
+dt { color: var(--tukey-color-muted); }
+dd { margin: 0; text-align: right; font-family: var(--tukey-font-mono); }
+aside button { display: block; width: 100%; text-align: left; margin: var(--tukey-space-sm) 0; font-size: var(--tukey-size-caption); background: transparent; border-color: var(--tukey-color-rule); }
+.badge { font-size: var(--tukey-size-caption); color: var(--tukey-color-accent); font-family: var(--tukey-font-mono); margin-bottom: var(--tukey-space-sm); }
+.edge { fill: none; stroke-opacity: var(--tukey-number-edge-opacity); }
+.node { cursor: pointer; }
+.node:focus { outline: none; }
+.node:focus .shape { stroke: var(--tukey-color-focus); stroke-width: 3; }
+.node text { fill: var(--tukey-color-ink); font: var(--tukey-size-caption) var(--tukey-font-mono); pointer-events: none; paint-order: stroke; stroke: var(--tukey-color-canvas); stroke-width: 3px; }
+.shape { stroke-width: 1.5; fill-opacity: var(--tukey-number-node-opacity); }
+.method-notes { padding: var(--tukey-space-lg) var(--tukey-space-page); border-top: var(--tukey-border-width) solid var(--tukey-color-rule); border-bottom: var(--tukey-border-width) solid var(--tukey-color-rule); }
+.method-notes summary { cursor: pointer; font-size: var(--tukey-size-small); color: var(--tukey-color-muted); }
+.notes { padding-top: var(--tukey-space-md); color: var(--tukey-color-muted); font-size: var(--tukey-size-caption); }
+.table-wrap { padding: var(--tukey-space-sm) var(--tukey-space-page) var(--tukey-space-xl); overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: var(--tukey-size-caption); }
+th { text-align: left; color: var(--tukey-color-muted); font-weight: normal; }
+th, td { padding: var(--tukey-space-sm) var(--tukey-space-md); border-bottom: var(--tukey-border-width) solid var(--tukey-color-rule); }
+td:not(:first-child) { font-family: var(--tukey-font-mono); }
+td button { padding: var(--tukey-space-xs) 0; border: 0; border-radius: 0; background: transparent; color: var(--tukey-color-accent); text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+#status { margin-left: auto; color: var(--tukey-color-muted); font: var(--tukey-size-caption) var(--tukey-font-mono); }
+#empty { position: absolute; inset: 40% 10%; text-align: center; color: var(--tukey-color-muted); }
+@media (max-width: 850px) { main { grid-template-columns: 1fr; grid-template-rows: max(480px, 60vh) auto; height: auto; } aside { max-height: 60vh; border-left: 0; border-top: var(--tukey-border-width) solid var(--tukey-color-rule); } header, .toolbar, .legend, .method-notes { padding-left: var(--tukey-space-lg); padding-right: var(--tukey-space-lg); } }
+</style></head>
+<body>
+<header><div class="brand">tukey / code report</div><h1>Code map</h1><p id="root"></p><div class="stats" id="stats"></div></header>
+<div class="toolbar">
+<label>View <select id="mode"><option value="modules">Modules</option><option value="mixed" selected>Modules + functions</option><option value="files">Files</option><option value="classes">Classes</option><option value="functions">Functions and methods</option><option value="all">All elements</option></select></label>
+<label>Module <select id="module"><option value="">All</option></select></label>
+<label>Search <input id="search" type="search" placeholder="Name or file"></label>
+<label><input type="checkbox" id="contains" checked> Containment</label>
+<label><input type="checkbox" id="imports" checked> Imports</label>
+<label><input type="checkbox" id="calls" checked> Calls</label>
+<button id="fit">Fit to view</button><span id="status" role="status"></span>
+</div>
+<div class="legend"><span><b>■</b> Module</span><span>▢ File (rounded corners)</span><span>□ Class (outline only)</span><span class="function">● Function</span><span class="method">◆ Method</span><span>Area ∝ total lines</span><span class="import-line">Import</span><span class="call-line">Call</span><span>Dashed → containment</span><span>Brick outline: function complexity ≥ 10</span></div>
+<main><div class="canvas"><svg id="graph" aria-label="Graph of modules, files, classes and functions"></svg><div id="empty" hidden>No nodes found for this filter.</div><div class="hint">Drag the background to pan · scroll to zoom · drag a node · click to inspect</div></div><aside id="details"><h2>Explore connections</h2><p>Select a node to see its lines, complexity and dependencies. Arrows point from the dependent or caller to the target.</p><p>Use “Modules + functions” to expand the map.</p></aside></main>
+<details class="method-notes"><summary>Reading guide and analysis limitations</summary><div class="notes" id="notes"></div></details>
+<div class="table-wrap"><h2>Visible nodes · largest first</h2><table><thead><tr><th>Name</th><th>Type</th><th>Lines</th><th>Estimated complexity</th><th>Incoming / outgoing</th></tr></thead><tbody id="ranking"></tbody></table></div>
+<script type="application/json" id="report-data">__TUKEY_DATA__</script>
+<section class="table-wrap" aria-label="Usage analysis">
+<h2>File and declaration usage</h2>
+<p id="usage-summary"></p><p id="usage-method"></p>
+<div class="toolbar">
+<label>Usage <select id="usage-status"><option value="unused_candidate">Possibly unused</option><option value="">All</option><option value="referenced">Referenced</option><option value="unknown">Unknown</option></select></label>
+<label>Type <select id="usage-kind"><option value="">All</option><option value="file">Files</option><option value="function">Functions</option><option value="class">Classes</option><option value="method">Methods</option><option value="implementation">Implementations</option></select></label>
+<label>Search <input id="usage-search" type="search" placeholder="Name or file"></label>
+</div>
+<p id="usage-count" role="status"></p>
+<table><thead><tr><th>Name</th><th>Type</th><th>File / line</th><th>Usage</th><th>Reachable</th></tr></thead><tbody id="usage-ranking"></tbody></table>
+<div id="usage-details" aria-live="polite"></div>
+</section>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('report-data').textContent);
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
+const usageNames={referenced:'Referenced',unused_candidate:'Possibly unused',unknown:'Unknown'};
+const usageKinds={file:'File',function:'Function',class:'Class',method:'Method',implementation:'Implementation'};
+const usageReasons={configured_entry_point:'Configured entry point',configured_public_api:'Configured public API',conventional_entry_point:'Conventional entry point',test_entry_point:'Test entry point',reachable_from_entry_point:'Reachable from an entry point',unreachable_from_entry_points:'No path from the analyzed entry points',reference_found_without_entry_points:'Reference found; entry points are not defined',no_reference_found:'No reference found',incomplete_analysis:'Incomplete analysis',public_api:'Public API; may have external consumers',framework_or_protocol:'May be called by a framework or protocol',ambiguous_reference:'Ambiguous reference',wildcard_or_reexport:'Wildcard or reexport',unresolved_call:'Unresolved call',possible_external_use:'Dependency of code that may be used externally',dynamic_reference:'Possible dynamic reference'};
+const usageItems=(data.usage_items||[]).filter(n=>n.usage);
+const usageById=new Map(usageItems.map(n=>[n.id,n]));
+const usageLocation=id=>{const n=usageById.get(id);return n?`${n.file}:${n.line} · ${n.name}`:id;};
+const evidenceNames={import:'Import',call:'Call',identifier_reference:'Identifier reference'};
+const usageCounts=data.summary.unused_candidates||{};
+$('usage-summary').textContent=`Candidates: ${usageCounts.files||0} files · ${usageCounts.function||0} functions · ${usageCounts.class||0} classes · ${usageCounts.method||0} methods · ${usageCounts.implementation||0} implementations.`;
+const usageAnalysis=data.usage_analysis;
+$('usage-method').textContent=(usageAnalysis?.mode==='reachability'?`Entry points: ${usageAnalysis.entry_points.map(usageLocation).join(', ')}. `:'No recognized entry points: classification uses references, with no reachability conclusion. ')+'Conservative syntactic analysis. Candidates require review; callbacks, reflection and dynamic dispatch may limit resolution. Test coverage does not determine whether code is unused.';
+function usageDetails(n){const panel=$('usage-details');panel.replaceChildren();const h=document.createElement('h3');h.textContent=n.name;const p=document.createElement('p');p.textContent=`${usageNames[n.usage.status]} · ${n.file}:${n.line}. ${n.usage.reasons.map(r=>usageReasons[r]||r).join('; ')}.`;panel.append(h,p);const list=document.createElement('ul');for(const e of n.usage.evidence){const item=document.createElement('li');item.textContent=`${e.file}:${e.line} · ${evidenceNames[e.kind]||e.kind} · source: ${usageLocation(e.source)}`;list.append(item);}if(!list.childNodes.length){const item=document.createElement('li');item.textContent='No reference evidence recorded.';list.append(item);}panel.append(list);}
+function usageRanking(){const body=$('usage-ranking');body.replaceChildren();const q=$('usage-search').value.toLowerCase();const found=usageItems.filter(n=>(!$('usage-status').value||n.usage.status===$('usage-status').value)&&(!$('usage-kind').value||n.kind===$('usage-kind').value)&&(!q||`${n.name} ${n.file}`.toLowerCase().includes(q)));$('usage-count').textContent=`${found.length} results`;$('usage-details').replaceChildren();for(const n of found){const row=document.createElement('tr'),cell=document.createElement('td'),button=document.createElement('button');button.textContent=n.name;button.onclick=()=>usageDetails(n);cell.append(button);row.append(cell);for(const value of [usageKinds[n.kind],`${n.file}:${n.line}`,usageNames[n.usage.status],n.usage.reachable===null?'Unknown':n.usage.reachable?'Yes':'No']){const td=document.createElement('td');td.textContent=value;row.append(td);}body.append(row);}}
+for(const id of ['usage-status','usage-kind'])$(id).addEventListener('change',usageRanking);$('usage-search').addEventListener('input',usageRanking);usageRanking();
+const tokenStyle=getComputedStyle(document.documentElement);
+const color=name=>tokenStyle.getPropertyValue('--tukey-color-'+name).trim();
+const all=new Map(data.nodes.map(n=>[n.id,n])), colors={module:color('module'),function:color('function'),method:color('method'),file:color('module'),class:color('function')}, names={module:'Module',function:'Function',method:'Method',file:'File',class:'Class'};
+let visible=[], links=[], selected=null, positions=new Map(), zoom=1, offset={x:0,y:0}, gesture=null;
+function el(tag,attrs={},label=null){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(label!==null)e.textContent=label;return e;}
+function stat(value,label){const e=document.createElement('div');e.className='stat';const strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=value.toLocaleString('en-US');span.textContent=label;e.append(strong,span);$('stats').append(e);}
+$('root').textContent=data.root;
+stat(data.summary.module_count,'modules');stat(data.summary.file_count,'files');stat(data.nodes.filter(n=>n.kind==='class').length,'classes');stat(data.nodes.filter(n=>['function','method'].includes(n.kind)).length,'functions / methods');stat(data.summary.size.lines,'total lines');stat(data.edges.filter(e=>e.kind==='import'&&all.get(e.source)?.kind==='file').length,'file import connections');stat(data.edges.filter(e=>e.kind==='call').length,'call pairs');
+for(const n of data.nodes.filter(n=>n.kind==='module')){const option=document.createElement('option');option.value=n.module;option.textContent=n.module;$('module').append(option);}
+$('notes').textContent=`Complexity: cyclomatic estimate (1 + decisions and logical operators), excluding nested function bodies from the enclosing function. Modules show the sum of their function/method complexities. Files show all physical lines; classes include their signatures and members and have no cyclomatic complexity. Class, function, file and module sizes overlap and must not be added together. File imports include dependencies within the same module. Module lines include direct files; function lines include signatures and bodies and overlap with module lines. Calls are resolved by names and imports; dynamic dispatch, overloads and type inference may leave some calls unconnected. ${data.unresolved_calls} unresolved calls; ${data.summary.error_count} diagnostics. Each view shows up to 600 nodes, keeping the largest; filter by module or name to explore the rest. Minimum visual size equals 1 line. This HTML works offline.`;
+function update(){
+ const mode=$('mode').value,module=$('module').value,q=$('search').value.toLowerCase();
+ let found=data.nodes.filter(n=>(mode==='all'||(mode==='mixed'?['module','function','method'].includes(n.kind):mode==='modules'?n.kind==='module':mode==='files'?n.kind==='file':mode==='classes'?n.kind==='class':['function','method'].includes(n.kind)))&&(!module||n.module===module)&&(!q||[n.name,n.module,n.file||'',n.owner||''].join(' ').toLowerCase().includes(q)));
+ found.sort((a,b)=>b.lines-a.lines||a.id.localeCompare(b.id));visible=found.slice(0,600);
+ const ids=new Set(visible.map(n=>n.id));links=data.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)&&$(e.kind==='contains'?'contains':e.kind==='import'?'imports':'calls').checked);
+ $('status').textContent=`${visible.length} / ${found.length} nodes · ${links.length} connections`;$('empty').hidden=visible.length!==0;
+ if(!ids.has(selected))selected=null;
+ layout();ranking();draw();fit();if(selected)inspect(selected);else resetDetails();
+}
+function layout(){
+ positions=new Map();const modules=[...new Set(visible.map(n=>n.module))].sort(),cols=Math.ceil(Math.sqrt(modules.length||1));
+ const maxLines=Math.max(1,...visible.map(n=>n.lines)),unit=55/Math.sqrt(maxLines);
+ let widths=modules.map(m=>Math.max(440,Math.sqrt(visible.filter(n=>n.module===m).length)*90));const spacing=Math.max(440,...widths);
+ modules.forEach((m,index)=>{const cx=(index%cols)*spacing,cy=Math.floor(index/cols)*spacing,members=visible.filter(n=>n.module===m),fn=members.filter(n=>n.kind!=='module');
+  for(const n of members){const radius=Math.sqrt(Math.max(1,n.lines))*unit;positions.set(n.id,{x:cx,y:cy,r:radius});}
+  fn.forEach((n,i)=>{const p=positions.get(n.id),angle=i*2.399963229728653,rad=100+Math.sqrt(i)*45;p.x=cx+Math.cos(angle)*rad;p.y=cy+Math.sin(angle)*rad;});
+ });
+}
+function draw(){
+ const svg=$('graph');svg.replaceChildren();const defs=el('defs');for(const [kind,markerColor] of [['import',color('import')],['call',color('call')]]){const marker=el('marker',{id:'arrow-'+kind,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});marker.append(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:markerColor}));defs.append(marker);}svg.append(defs);
+ const layer=el('g',{id:'layer',transform:`translate(${offset.x} ${offset.y}) scale(${zoom})`});svg.append(layer);
+ const nearby=new Set(selected?[selected,...links.filter(e=>e.source===selected||e.target===selected).flatMap(e=>[e.source,e.target])]:visible.map(n=>n.id));
+ for(const edge of links){const a=positions.get(edge.source),b=positions.get(edge.target),dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1;
+  const ux=dx/length,uy=dy/length;
+  const boundary=(p,n)=>['module','file','class'].includes(n.kind)?p.r*.886/Math.max(Math.abs(ux),Math.abs(uy),.001):n.kind==='method'?p.r*1.253/Math.max(Math.abs(ux)+Math.abs(uy),.001):p.r;
+  const ar=boundary(a,all.get(edge.source)),br=boundary(b,all.get(edge.target));
+  const sx=a.x+ux*(ar+2),sy=a.y+uy*(ar+2),tx=b.x-ux*(br+5),ty=b.y-uy*(br+5);
+  const path=edge.source===edge.target?`M ${a.x+a.r} ${a.y} C ${a.x+a.r+70} ${a.y-70} ${a.x-a.r-70} ${a.y-70} ${a.x-a.r} ${a.y}`:`M ${sx} ${sy} Q ${(sx+tx)/2-dy*.06} ${(sy+ty)/2+dx*.06} ${tx} ${ty}`;
+  const e=el('path',{d:path,class:'edge',stroke:color(edge.kind),'stroke-width':edge.kind==='contains'?1:Math.min(5,1+Math.log2(edge.weight+1)),opacity:selected&&edge.source!==selected&&edge.target!==selected?.12:1});
+  if(edge.kind==='contains')e.setAttribute('stroke-dasharray','4 6');else { if(edge.kind==='call'){e.setAttribute('stroke-dasharray','2 3');e.setAttribute('stroke-linecap','round');}e.setAttribute('marker-end','url(#arrow-'+edge.kind+')'); }
+  e.append(el('title',{},`${edge.kind==='call'?'Call':edge.kind==='import'?'Import':'Containment'}: ${all.get(edge.source).name} → ${all.get(edge.target).name} (${edge.weight})`));layer.append(e);
+ }
+ for(const n of visible){const p=positions.get(n.id),g=el('g',{class:'node',transform:`translate(${p.x} ${p.y})`,tabindex:0,role:'button','aria-label':`${names[n.kind]} ${n.name}, ${n.lines} lines, complexity ${n.complexity}`,opacity:nearby.has(n.id)?1:.25});g.dataset.id=n.id;
+  const attrs={class:'shape',fill:colors[n.kind],stroke:selected===n.id?color('focus'):n.kind!=='module'&&n.complexity>=10?color('danger'):colors[n.kind]};
+  const shape=['module','file','class'].includes(n.kind)?el('rect',{...attrs,x:-p.r*.886,y:-p.r*.886,width:p.r*1.772,height:p.r*1.772,rx:n.kind==='file'?p.r*.2:0}):n.kind==='method'?el('path',{...attrs,d:`M 0 ${-p.r*1.253} L ${p.r*1.253} 0 L 0 ${p.r*1.253} L ${-p.r*1.253} 0 Z`}):el('circle',{...attrs,r:p.r});
+  if(n.kind==='class')shape.setAttribute('fill','none');
+  // Areas of squares, circles and diamonds all equal pi*r².
+  g.append(el('circle',{r:Math.max(12,p.r),fill:'transparent'}),shape,el('title',{},`${names[n.kind]}: ${n.name}\n${n.lines} lines · complexity ${n.complexity}\n${n.file||n.module}`));
+  g.append(el('text',{x:0,y:p.r*1.3+16,'text-anchor':'middle'},n.name.length>32?n.name.slice(0,29)+'…':n.name));
+  g.addEventListener('click',()=>{if(!gesture?.moved)choose(n.id);});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id);}});layer.append(g);
+ }
+}
+function choose(id){selected=id;draw();inspect(id);}
+function resetDetails(){$('details').replaceChildren();const h=document.createElement('h2');h.textContent='Explore connections';const p=document.createElement('p');p.textContent='Select a node to see its lines, complexity, incoming and outgoing connections. Size represents total lines.';$('details').append(h,p);}
+function inspect(id){const n=all.get(id),panel=$('details');panel.replaceChildren();panel.scrollTop=0;const badge=document.createElement('div');badge.className='badge';badge.textContent=names[n.kind];const h=document.createElement('h2');h.textContent=n.name;panel.append(badge,h);
+ const p=document.createElement('p');p.textContent=n.file?`${n.file}:${n.start_line}–${n.end_line}${n.owner?' · '+n.owner:''}`:`${n.file_count} files · ${n.callable_count} functions/methods`;panel.append(p);
+ const dl=document.createElement('dl');const values=[['Total lines',n.lines],['Estimated complexity',n.complexity??'—']];
+ if(n.kind==='module')values.push(['Incoming (Ca)',n.coupling.afferent],['Outgoing (Ce)',n.coupling.efferent],['Instability',n.coupling.instability===null?'—':n.coupling.instability.toFixed(2)],['Unresolved imports',n.coupling.unresolved_dependencies.length]);
+ else if(n.kind==='file')values.push(['Declarations',n.declaration_count],['Dependent files',n.fan_in],['Dependencies',n.fan_out]);
+ else if(n.kind==='class')values.push(['Direct members',n.member_count]);
+ else values.push(['Callers (fan-in)',n.fan_in],['Targets (fan-out)',n.fan_out],['Type annotations',n.type_coverage===null?'—':Math.round(n.type_coverage*100)+'%']);
+ for(const [key,value] of values){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;dl.append(dt,dd);}panel.append(dl);
+ if(n.usage){const p=document.createElement('p');p.textContent=`Usage: ${usageNames[n.usage.status]}. ${n.usage.reasons.map(r=>usageReasons[r]||r).join('; ')}.`;panel.append(p);}
+ const connections=data.edges.filter(e=>(e.kind!=='contains'||(['class','file'].includes(n.kind)&&e.source===id))&&(e.source===id||e.target===id));
+ const caption=document.createElement('p');caption.textContent=`${connections.length} connections (click to explore)`;panel.append(caption);
+ for(const edge of connections.slice(0,60)){const other=all.get(edge.source===id?edge.target:edge.source);if(!other)continue;const button=document.createElement('button');button.textContent=`${edge.source===id?'→':'←'} ${other.name} · ${edge.kind==='call'?'call':edge.kind==='contains'?'member':'import'} ×${edge.weight}`;button.onclick=()=>{if(!positions.has(other.id)){$('module').value='';$('search').value='';$('mode').value='all';update();}if(positions.has(other.id))choose(other.id);else{ $('module').value=other.module;$('search').value=other.name;update();choose(other.id);}};panel.append(button);}
+}
+function ranking(){const body=$('ranking');body.replaceChildren();for(const n of visible){const tr=document.createElement('tr'),td=document.createElement('td'),button=document.createElement('button');button.textContent=n.name;button.onclick=()=>choose(n.id);td.append(button);tr.append(td);for(const value of [names[n.kind],n.lines,n.complexity??'—',n.kind==='module'?`${n.coupling.afferent} / ${n.coupling.efferent}`:n.kind==='class'?'—':`${n.fan_in} / ${n.fan_out}`]){const cell=document.createElement('td');cell.textContent=value;tr.append(cell);}body.append(tr);}}
+function fit(){if(!visible.length)return;const ps=[...positions.values()],minX=Math.min(...ps.map(p=>p.x-p.r-70)),maxX=Math.max(...ps.map(p=>p.x+p.r+70)),minY=Math.min(...ps.map(p=>p.y-p.r-60)),maxY=Math.max(...ps.map(p=>p.y+p.r+60)),box=$('graph').getBoundingClientRect();zoom=Math.max(.02,Math.min(2,box.width/(maxX-minX),box.height/(maxY-minY))*.86);offset={x:box.width/2-(minX+maxX)/2*zoom,y:box.height/2-(minY+maxY)/2*zoom};transform();}
+function transform(){const layer=$('layer');if(layer)layer.setAttribute('transform',`translate(${offset.x} ${offset.y}) scale(${zoom})`);}
+for(const id of ['mode','module','contains','imports','calls'])$(id).addEventListener('change',update);$('search').addEventListener('input',update);$('fit').onclick=fit;
+const svg=$('graph');svg.addEventListener('wheel',e=>{e.preventDefault();const box=svg.getBoundingClientRect(),x=e.clientX-box.left,y=e.clientY-box.top,next=Math.max(.02,Math.min(15,zoom*Math.exp(-e.deltaY*.001)));offset={x:x-(x-offset.x)*next/zoom,y:y-(y-offset.y)*next/zoom};zoom=next;transform();},{passive:false});
+svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const target=e.target.closest('.node');gesture={id:target?.dataset.id,x:e.clientX,y:e.clientY,moved:false};svg.setPointerCapture(e.pointerId);});
+svg.addEventListener('pointermove',e=>{if(!gesture)return;const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;if(Math.abs(dx)+Math.abs(dy)>2)gesture.moved=true;if(gesture.id){const p=positions.get(gesture.id);p.x+=dx/zoom;p.y+=dy/zoom;draw();}else{offset.x+=dx;offset.y+=dy;transform();}gesture.x=e.clientX;gesture.y=e.clientY;});
+svg.addEventListener('pointerup',e=>{const previous=gesture;gesture=null;if(previous?.id&&!previous.moved)choose(previous.id);if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);});svg.addEventListener('pointercancel',()=>gesture=null);
+window.addEventListener('resize',fit);update();
+</script></body></html>
