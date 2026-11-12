@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tukey-code"
+version = "0.2.0"
+description = "Structured multi-language source code metrics"
+readme = "README.MD"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = ["tree-sitter-language-pack==0.9.1"]
+
+[project.urls]
+Homepage = "https://github.com/pedrohgoncalvess/tukey"
+Repository = "https://github.com/pedrohgoncalvess/tukey"
+Issues = "https://github.com/pedrohgoncalvess/tukey/issues"
+
+[project.scripts]
+tukey = "tukey.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "jsonschema>=4.23,<5", "black>=25,<26"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tukey"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
