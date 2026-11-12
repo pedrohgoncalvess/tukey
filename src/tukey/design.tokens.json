@@ -1,0 +1,54 @@
+{
+  "$description": "Tukey — papel, tinta e terra. Tokens compartilhados por relatórios e futuras interfaces.",
+  "color": {
+    "background": {"$type": "color", "$value": "#f4f0e6"},
+    "surface": {"$type": "color", "$value": "#eae4d7"},
+    "canvas": {"$type": "color", "$value": "#faf7f0"},
+    "ink": {"$type": "color", "$value": "#2d2923"},
+    "muted": {"$type": "color", "$value": "#635c51"},
+    "rule": {"$type": "color", "$value": "#cdc3b1"},
+    "rule-strong": {"$type": "color", "$value": "#8b806f"},
+    "accent": {"$type": "color", "$value": "#73462d"},
+    "module": {"$type": "color", "$value": "#5b6d74"},
+    "function": {"$type": "color", "$value": "#74774c"},
+    "method": {"$type": "color", "$value": "#9a654b"},
+    "import": {"$type": "color", "$value": "#51666d"},
+    "call": {"$type": "color", "$value": "#84513b"},
+    "contains": {"$type": "color", "$value": "#a99e88"},
+    "danger": {"$type": "color", "$value": "#8a3028"},
+    "focus": {"$type": "color", "$value": "#302a21"}
+  },
+  "font": {
+    "body": {"$type": "fontFamily", "$value": ["Arial", "Helvetica", "sans-serif"]},
+    "heading": {"$type": "fontFamily", "$value": ["Georgia", "'Times New Roman'", "serif"]},
+    "mono": {"$type": "fontFamily", "$value": ["'Courier New'", "Courier", "monospace"]}
+  },
+  "size": {
+    "caption": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+    "small": {"$type": "dimension", "$value": {"value": 13, "unit": "px"}},
+    "body": {"$type": "dimension", "$value": {"value": 14, "unit": "px"}},
+    "section": {"$type": "dimension", "$value": {"value": 19, "unit": "px"}},
+    "metric": {"$type": "dimension", "$value": {"value": 24, "unit": "px"}},
+    "title": {"$type": "dimension", "$value": {"value": 32, "unit": "px"}}
+  },
+  "space": {
+    "xs": {"$type": "dimension", "$value": {"value": 4, "unit": "px"}},
+    "sm": {"$type": "dimension", "$value": {"value": 8, "unit": "px"}},
+    "md": {"$type": "dimension", "$value": {"value": 12, "unit": "px"}},
+    "lg": {"$type": "dimension", "$value": {"value": 16, "unit": "px"}},
+    "xl": {"$type": "dimension", "$value": {"value": 24, "unit": "px"}},
+    "page": {"$type": "dimension", "$value": {"value": 28, "unit": "px"}}
+  },
+  "layout": {
+    "sidebar": {"$type": "dimension", "$value": {"value": 310, "unit": "px"}}
+  },
+  "border": {
+    "width": {"$type": "dimension", "$value": {"value": 1, "unit": "px"}},
+    "radius": {"$type": "dimension", "$value": {"value": 2, "unit": "px"}}
+  },
+  "number": {
+    "line-height": {"$type": "number", "$value": 1.6},
+    "edge-opacity": {"$type": "number", "$value": 0.7},
+    "node-opacity": {"$type": "number", "$value": 0.9}
+  }
+}
